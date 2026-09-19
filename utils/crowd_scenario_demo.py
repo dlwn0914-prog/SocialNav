@@ -16,7 +16,13 @@ controller instability found tonight).
 
 Usage:
     PYTHONPATH=/home/nuri2/SocialNav python3 utils/crowd_scenario_demo.py
+    # or, using a real (robot, agents, goal) snapshot captured from the live
+    # Gazebo+HuNav sim via src/preference/capture_snapshot.py:
+    PYTHONPATH=/home/nuri2/SocialNav python3 utils/crowd_scenario_demo.py /tmp/crowd_snapshot.json
 """
+import json
+import sys
+
 import numpy as np
 
 from src.preference.crowd_path_generator import generate_candidate_paths, to_ego_frame
@@ -27,9 +33,10 @@ RNG = np.random.default_rng(0)
 
 # Map is 30m x 23m (map_empty/map/map.yaml). Robot crosses the room along a
 # corridor; 6 people are clustered in the middle of that corridor.
-START = np.array([2.0, 11.5])
-GOAL = np.array([28.0, 11.5])
-AGENTS = np.array(
+# Fallback defaults, used when no snapshot JSON is given on the command line.
+DEFAULT_START = np.array([2.0, 11.5])
+DEFAULT_GOAL = np.array([28.0, 11.5])
+DEFAULT_AGENTS = np.array(
     [
         [14.0, 10.2],
         [14.5, 11.0],
@@ -39,6 +46,26 @@ AGENTS = np.array(
         [14.2, 12.9],
     ]
 )
+
+
+def load_scenario(snapshot_path=None):
+    """Returns (start, goal, agents) as np arrays, either from a
+    capture_snapshot.py JSON file ({"robot": [x,y], "agents": [[x,y],...],
+    "goal": [x,y]}) or the hardcoded corridor defaults above."""
+    if snapshot_path is None:
+        return DEFAULT_START, DEFAULT_GOAL, DEFAULT_AGENTS
+    with open(snapshot_path) as f:
+        snap = json.load(f)
+    if snap.get("goal") is None:
+        raise ValueError(
+            f"{snapshot_path} has no goal (captured before task_generator assigned one). "
+            "Re-capture after a task has started, or pass GOAL_REQUIRED=0 to capture_snapshot.py "
+            "and fill in 'goal' manually in the JSON."
+        )
+    start = np.array(snap["robot"], dtype=np.float64)
+    goal = np.array(snap["goal"], dtype=np.float64)
+    agents = np.array(snap["agents"], dtype=np.float64)
+    return start, goal, agents
 
 FULL_FEATURE_NAMES = FEATURE_NAMES + ["min_dist_to_agents"]
 
@@ -98,15 +125,21 @@ def full_features(waypoints_ego, target_ego, agents_ego):
 
 
 def main():
-    candidates_world = generate_candidate_paths(START, GOAL, AGENTS, num_steps=5)
+    snapshot_path = sys.argv[1] if len(sys.argv) > 1 else None
+    start, goal, agents = load_scenario(snapshot_path)
+    source = f"snapshot: {snapshot_path}" if snapshot_path else "hardcoded defaults"
+    print(f"scenario source: {source}")
+    print(f"start={start}, goal={goal}, n_agents={len(agents)}\n")
+
+    candidates_world = generate_candidate_paths(start, goal, agents, num_steps=5)
     names = list(candidates_world.keys())
 
-    agents_ego = to_ego_frame(AGENTS, START)
-    target_ego = to_ego_frame(GOAL[None, :], START)[0]
+    agents_ego = to_ego_frame(agents, start)
+    target_ego = to_ego_frame(goal[None, :], start)[0]
 
     feats = {}
     for name, wp_world in candidates_world.items():
-        wp_ego = to_ego_frame(wp_world, START)
+        wp_ego = to_ego_frame(wp_world, start)
         feats[name] = full_features(wp_ego, target_ego, agents_ego)
         print(f"{name}: " + ", ".join(f"{n}={v:.2f}" for n, v in zip(FULL_FEATURE_NAMES, feats[name])))
 
