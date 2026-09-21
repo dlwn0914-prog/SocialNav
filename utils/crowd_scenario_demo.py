@@ -27,7 +27,8 @@ import numpy as np
 
 from src.preference.crowd_path_generator import generate_candidate_paths, to_ego_frame
 from src.preference.features import extract_features, agent_avoidance_feature, FEATURE_NAMES
-from src.preference.bradley_terry import fit_preference_weights, predict_preference_prob
+from src.preference.bradley_terry import fit_preference_weights, predict_preference_prob, score as bt_score
+from src.preference import select_and_refine
 
 RNG = np.random.default_rng(0)
 
@@ -173,6 +174,25 @@ def main():
         print(f"  true-profile best: {true_best}{expected_note} | fitted-scorer best: {hat_best} -> {fit_matches_truth}")
         print(f"  true_scores:   " + ", ".join(f"{n}={v:.2f}" for n, v in true_scores.items()))
         print(f"  fitted_scores: " + ", ".join(f"{n}={v:.2f}" for n, v in hat_scores.items()))
+
+        # guidance step: score+select with the fitted w_hat (agent-aware, 8-dim),
+        # then a few steps of gradient ascent on the *waypoints themselves*
+        # towards higher w_hat . features -- select_best should reproduce
+        # hat_best above (sanity check the two scoring paths agree), and the
+        # refine step is what actually closes the "pairwise -> BT -> guidance"
+        # loop instead of just picking among the 3 fixed candidates.
+        candidates_ego = [to_ego_frame(candidates_world[n], start) for n in names]
+        sel_idx, sel_score, sel_scores = select_and_refine.select_best(
+            w_hat, candidates_ego, target_ego, agent_positions=agents_ego
+        )
+        assert names[sel_idx] == hat_best, "select_best/manual dot-product scoring disagree"
+        refined = select_and_refine.refine_towards_preference(
+            candidates_ego[sel_idx], target_ego, w_hat, agent_positions=agents_ego,
+            num_steps=8,
+        )
+        refined_score = bt_score(w_hat, full_features(refined, target_ego, agents_ego))
+        print(f"  guidance: selected={hat_best} (score={sel_score:.2f}) -> refined score={refined_score:.2f} "
+              f"(delta={refined_score - sel_score:+.2f})")
         print()
 
 
