@@ -34,12 +34,24 @@ def _crowd_centroid_and_spread(agent_positions, start, goal):
     return centroid, spread, normal
 
 
-def generate_candidate_paths(start, goal, agent_positions, num_steps=5):
+def generate_candidate_paths(start, goal, agent_positions, num_steps=5, goal_tolerance=0.5):
     """Returns {name: (num_steps, 2) world-frame waypoint array}.
 
     - "direct": straight line start->goal (shortest, may pass through the crowd)
     - "wide_detour": bulges away from the crowd's centroid by ~2x its spread
     - "moderate_detour": bulges away by ~1x its spread
+
+    goal_tolerance: how far (meters) the detour styles' final waypoint may sit
+    from the literal `goal` point, matching a real nav2 goal-checker's arrival
+    radius (typically 0.25-0.5m) instead of exact-position arrival. Without
+    this, the old sin(pi*t) bulge profile forced bulge=0 exactly at t=1, so
+    the final waypoint was always precisely `goal` for every style -- meaning
+    an agent standing within a couple meters of the goal itself could never be
+    avoided by any detour, no matter how wide (see utils/crowd_scenario_demo.py
+    real-snapshot runs, where min_dist_to_agents was identical across all 3
+    styles because the nearest agent was ~3m from goal). `start` gets no such
+    tolerance: the robot is really, exactly there right now, so the first
+    waypoint's convergence to 0 bulge as t->0 is left untouched.
     """
     start = np.asarray(start, dtype=np.float64)
     goal = np.asarray(goal, dtype=np.float64)
@@ -51,14 +63,20 @@ def generate_candidate_paths(start, goal, agent_positions, num_steps=5):
         # no crowd in the way: all three styles collapse to ~direct
         return {"direct": direct, "moderate_detour": direct.copy(), "wide_detour": direct.copy()}
 
-    # bulge magnitude peaks at the midpoint (t=0.5), zero at the endpoints,
-    # pushed away from the crowd centroid along the corridor normal
+    # bulge magnitude peaks at the midpoint (t=0.5), tapering to (near) zero at
+    # the start and to at-most-goal_tolerance at the goal end, pushed away
+    # from the crowd centroid along the corridor normal
     mid_vec = centroid - (start + goal) / 2.0
     side = np.sign(np.dot(mid_vec, normal)) or 1.0
-    bulge_profile = np.sin(np.pi * t)  # 0 at t=0/1, 1 at t=0.5
+    bulge_profile = np.sin(np.pi * t)  # 0 at t=0, 1 at t=0.5, 0 at t=1
 
     def bulge(mag):
-        return direct - side * mag * bulge_profile[:, None] * normal[None, :]
+        profile = bulge_profile.copy()
+        if mag > 1e-8:
+            # override just the final waypoint's factor so its offset is
+            # min(mag, goal_tolerance) instead of forced to 0
+            profile[-1] = min(1.0, goal_tolerance / mag)
+        return direct - side * mag * profile[:, None] * normal[None, :]
 
     return {
         "direct": direct,

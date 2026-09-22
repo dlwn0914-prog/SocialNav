@@ -42,9 +42,30 @@ def _angle_between(v1, v2):
     return float(np.degrees(np.arccos(cos_sim)))
 
 
-def extract_features(waypoints, target):
+def extract_features(waypoints, target, fade_radius=2.0):
     """waypoints: (T, 2) array, ego-frame relative positions, oldest->newest.
     target: (2,) array, the goal position in the same ego frame.
+    fade_radius: final_heading_error_deg is scaled by min(1, dist_to_target /
+    fade_radius) -- 0 right at the target, ramping linearly up to its full raw
+    value by the time the endpoint is fade_radius away (and unscaled beyond
+    that). Without this, the angle between the (typically several-meter)
+    final step and the (typically sub-meter) residual vector still remaining
+    to target is numerically unstable -- two nearly-orthogonal vectors of very
+    different magnitude can report 60-90 degrees of "heading error" even
+    though the trajectory has essentially arrived. This was previously masked
+    only because src/preference/crowd_path_generator.py's synthetic
+    candidates used to force their endpoint to *exactly* equal target
+    (residual = 0); real model-predicted waypoints (e.g.
+    utils/preference_integration_demo.py) never land exactly on target
+    either, so this instability was likely already silently affecting those
+    fits too.
+    A *hard* 0/raw cutoff at some tolerance (an earlier version of this fix)
+    creates a discontinuity in the score surface right at that radius --
+    select_and_refine.py's refine_towards_preference does finite-difference
+    gradient ascent on these waypoints, and a step landing near that boundary
+    saw a huge spurious slope, causing large, physically meaningless score
+    jumps (+30-50) instead of genuine small improvements. The linear ramp above
+    is smooth (bounded slope 1/fade_radius everywhere), which fixes that.
     Returns a (NUM_FEATURES,) float array.
     """
     wp = np.asarray(waypoints, dtype=np.float64)
@@ -65,7 +86,10 @@ def extract_features(waypoints, target):
 
     final_heading = steps[-1] if len(steps) > 0 and np.linalg.norm(steps[-1]) > 1e-8 else (full[-1] - full[0])
     to_target = target - full[-1]
-    final_heading_error = _angle_between(final_heading, to_target) if np.linalg.norm(to_target) > 1e-6 else 0.0
+    dist_to_target = float(np.linalg.norm(to_target))
+    raw_final_heading_error = _angle_between(final_heading, to_target) if dist_to_target > 1e-6 else 0.0
+    fade = min(1.0, dist_to_target / fade_radius) if fade_radius > 1e-8 else 1.0
+    final_heading_error = raw_final_heading_error * fade
 
     line_vec = target - start
     line_norm = np.linalg.norm(line_vec)
@@ -80,14 +104,29 @@ def extract_features(waypoints, target):
     else:
         lateral_deviation = 0.0
 
-    endpoint_dist_to_target = float(np.linalg.norm(full[-1] - target))
+    endpoint_dist_to_target = dist_to_target
 
     overall_disp = full[-1] - full[0]
-    target_alignment_cos = (
-        float(np.dot(overall_disp, to_target) / (np.linalg.norm(overall_disp) * np.linalg.norm(to_target) + 1e-8))
-        if np.linalg.norm(to_target) > 1e-6 and np.linalg.norm(overall_disp) > 1e-8
-        else 0.0
-    )
+    disp_norm = float(np.linalg.norm(overall_disp))
+    if disp_norm <= 1e-8:
+        # trajectory never moved -- alignment with the target is genuinely
+        # undefined here, not "arrived".
+        target_alignment_cos = 0.0
+    elif dist_to_target > 1e-6:
+        target_alignment_cos = float(np.dot(overall_disp, to_target) / (disp_norm * dist_to_target))
+    else:
+        # endpoint exactly reaches target: the *best* possible outcome for
+        # this feature, not the "else 0.0" this used to fall back to. That
+        # wrong default made an exact arrival (e.g.
+        # src/preference/crowd_path_generator.py's "direct" candidate, whose
+        # endpoint is target by construction) look artificially *worse* than
+        # a near-miss on this feature, and Bradley-Terry fitting exploited
+        # that artificial discontinuity: comparing "direct" (wrongly 0.0)
+        # against near-target candidates (correctly ~1.0) inflated a fitted
+        # w_hat['target_alignment_cos'] to 54.5 in
+        # utils/crowd_scenario_demo.py, which then blew up refine's score by
+        # +53 for a barely-perturbed waypoint set.
+        target_alignment_cos = 1.0
 
     return np.array(
         [
