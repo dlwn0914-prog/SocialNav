@@ -38,6 +38,7 @@ import numpy as np
 
 import utils.crowd_citywalker_integration_demo as ccd
 from src.preference.bradley_terry import fit_preference_weights, score as bt_score
+from src.preference.features import agent_avoidance_feature
 
 # Exactly what was asked and answered in the 2026-09-22 session (see module
 # docstring). Each entry is (winner_label, loser_label) among the 4
@@ -56,7 +57,48 @@ def parse_args():
     p.add_argument("--cache", default="crowd_citywalker_integration_demo.json")
     p.add_argument("--image", default="forward_1224.jpg", help="Substring matching the item's image filename.")
     p.add_argument("--interactive", action="store_true", help="Ask a real person via the terminal instead of replaying SESSION_ANSWERS.")
+    p.add_argument("--plot", default=None, help="Save a before/after (selected vs refined) path plot to this PNG path.")
     return p.parse_args()
+
+
+def save_plot(out_path, item, candidates, gt, agents, target, best_idx, selected, refined, best_score, refined_score):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from PIL import Image
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6.5))
+    img = Image.open(item["image"]).convert("RGB")
+    axes[0].imshow(img)
+    axes[0].set_title("Real observation")
+    axes[0].axis("off")
+
+    ax = axes[1]
+    origin = np.array([0.0, 0.0])
+    for c in candidates:
+        full = np.vstack([origin, c])
+        ax.plot(full[:, 0], full[:, 1], color="lightgray", lw=1, zorder=1)
+    ax.plot([], [], color="lightgray", lw=1, label=f"other {len(candidates) - 1} raw candidates")
+
+    full_gt = np.vstack([origin, gt])
+    full_sel = np.vstack([origin, selected])
+    full_ref = np.vstack([origin, refined])
+    ax.plot(full_gt[:, 0], full_gt[:, 1], "k--", lw=2, label="ground truth", zorder=3)
+    ax.plot(full_sel[:, 0], full_sel[:, 1], "*-", color="black", lw=2.5, markersize=12,
+             label=f"cand_{best_idx} (selected by REAL feedback)", zorder=4)
+    ax.plot(full_ref[:, 0], full_ref[:, 1], "^-", color="tab:red", lw=2.5, markersize=8, label="+ refined", zorder=5)
+    ax.scatter(agents[:, 0], agents[:, 1], color="red", marker="x", s=90, label="synthetic crowd", zorder=6)
+
+    ax.set_ylim(-0.2, 2.2)
+    ax.set_xlabel("x (ego, raw units) -- AXIS STRETCHED, not to true scale")
+    ax.set_ylabel("y (ego, raw units)")
+    ax.legend(fontsize=8, loc="upper left")
+    ax.grid(alpha=0.3)
+    ax.set_title(f"Preference-guided result: score {best_score:.2f} -> {refined_score:.2f}")
+
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=150)
+    print(f"\nplot saved to {out_path}")
 
 
 def load_item(cache_path, image_substr):
@@ -155,6 +197,9 @@ def main():
     refined_score = bt_score(w_hat, ccd.reduced_features(refined, target, agents, reach), scale=scale)
     print(f"\nrefine: score {best_score:.3f} -> {refined_score:.3f}")
     print("endpoint displacement:", round(float(np.linalg.norm(refined[-1] - candidates[best_idx][-1])), 3))
+
+    if args.plot:
+        save_plot(args.plot, item, candidates, gt, agents, target, best_idx, candidates[best_idx], refined, best_score, refined_score)
 
 
 if __name__ == "__main__":
