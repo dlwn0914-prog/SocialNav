@@ -31,11 +31,35 @@ parameters when several of them (path_length, lateral_deviation,
 endpoint_dist_to_target) are collinear measures of "how much did you deviate" AND
 scale with each scene's own absolute coordinate size. Dropping to 3 well-separated,
 naturally scale-free features (angles/cosine, plus min_dist_to_agents rescaled by
-this item's own |target|) is a more honest match to what N=10 examples can actually
-identify; select_and_refine.py's shared select_best/refine_towards_preference
+candidate_reach_scale(), see below) is a more honest match to what N=10 examples
+can actually identify; select_and_refine.py's shared select_best/refine_towards_preference
 assume the *full* 8-dim feature space (via src/preference/features.py's
 extract_features), so this script reimplements a local select+refine over the
 reduced 3-dim space rather than changing that already-validated shared module.
+
+Crowd placement scale (candidate_reach_scale, not |target|): CityWalker's 5-step
+task predicts only the *next* few steps, not a full path to the eventual goal --
+ground truth itself typically covers under half of |target|'s distance (confirmed
+visually: /home/nuri2/Desktop/crowd_citywalker_demo.png). An earlier version placed
+the synthetic crowd relative to |target|, which put it well outside the region any
+candidate could reach, making "avoids the crowd" untestable. Rescaling to each
+item's own candidate_reach_scale() (mean waypoint distance from origin, pooled
+across all 10 real candidates) fixed that -- but exposed a real, unresolved
+tradeoff rather than a bug: with the crowd now genuinely in the way,
+total_turn_angle_deg (the *true* user's dominant preference, weight -3.68 in
+normalized space) got almost entirely crowded out by min_dist_to_agents in the
+fitted w_hat (weight 1.37 vs true 0.08) -- cosine(w_true, w_hat) dropped from 0.92
+(crowd out of reach, no real conflict to resolve) to 0.19 (crowd in reach, real
+conflict). refine_towards_preference's unconstrained backtracking line search then
+chased that skewed clearance weight past what any of the 10 original candidates
+achieved (mean clearance 0.76 vs oracle-best-of-10's 0.26) while destroying angle
+accuracy (19.3 -> 65.0 deg mean). This is the most honest result this pipeline has
+produced: when clearance and target-tracking *genuinely* compete, N=10 comparisons
++ unconstrained refinement does not yet resolve the tradeoff sensibly. Left
+unfixed as a documented finding rather than patched further -- candidate next
+steps: bound refine's total displacement to the original candidate spread (so it
+can only interpolate/nudge within observed diversity, not extrapolate arbitrarily
+far), and/or increase n_shot so the fit can separate the two competing features.
 
 Usage:
     PYTHONPATH=. python utils/crowd_citywalker_integration_demo.py \
@@ -108,44 +132,65 @@ def load_category_samples(data_path, category):
     return items
 
 
-def synthetic_crowd(target, num_agents, rng):
-    """Place num_agents agents near a random point along the 0->target line, in
-    the *same raw (unscaled) coordinate frame* the model's own waypoints/target
-    use -- scale proportional to |target| so it's meaningful regardless of this
-    item's particular step_scale. The model never sees these (not in the image);
+def candidate_reach_scale(candidates):
+    """Mean distance-from-origin of every waypoint across all of this item's
+    real candidates -- "how far do these 5-step predictions actually reach",
+    as opposed to |target| (the eventual-goal direction CityWalker's 5-step
+    task is *not* trying to reach in one shot -- ground truth itself only
+    covers a fraction of the distance to target; see module docstring).
+    Placing/scoring the synthetic crowd relative to |target| put agents well
+    outside the region any candidate could possibly pass through (visually
+    confirmed: /home/nuri2/Desktop/crowd_citywalker_demo.png's crowd sat near
+    the target star while every candidate stayed within a third of that
+    distance), making "avoids the crowd" untestable for that sample. This is
+    the scale everything crowd-related should use instead."""
+    all_wp = np.concatenate([np.asarray(c, dtype=np.float64) for c in candidates], axis=0)
+    return float(np.mean(np.linalg.norm(all_wp, axis=1)))
+
+
+def synthetic_crowd(candidates, num_agents, rng):
+    """Place num_agents agents near a random point along the direction the
+    candidates actually travel (their pooled centroid direction), at a
+    fraction of candidate_reach_scale(candidates) -- i.e. *inside* the region
+    the model's own 5-step predictions can plausibly reach, not near the
+    (out-of-reach) target. The model never sees these (not in the image);
     this is purely for scoring min_dist_to_agents (see module docstring)."""
-    target = np.asarray(target, dtype=np.float64)
-    dist = float(np.linalg.norm(target))
-    if dist < 1e-6:
+    all_wp = np.concatenate([np.asarray(c, dtype=np.float64) for c in candidates], axis=0)
+    reach = float(np.mean(np.linalg.norm(all_wp, axis=1)))
+    if reach < 1e-6:
         return np.zeros((num_agents, 2))
-    frac = rng.uniform(0.35, 0.7)
-    block_point = frac * target
-    spread = 0.25 * dist
-    normal = np.array([-target[1], target[0]]) / dist
-    along = target / dist
+    centroid = all_wp.mean(axis=0)
+    centroid_norm = float(np.linalg.norm(centroid))
+    direction = centroid / centroid_norm if centroid_norm > 1e-6 else np.array([1.0, 0.0])
+    normal = np.array([-direction[1], direction[0]])
+    frac = rng.uniform(0.5, 1.1)
+    block_point = direction * reach * frac
+    spread = 0.3 * reach
     offsets = rng.normal(scale=spread, size=(num_agents, 1)) * normal[None, :]
-    offsets = offsets + rng.normal(scale=spread * 0.4, size=(num_agents, 1)) * along[None, :]
+    offsets = offsets + rng.normal(scale=spread * 0.4, size=(num_agents, 1)) * direction[None, :]
     return block_point[None, :] + offsets
 
 
-def reduced_features(waypoints, target, agents):
+def reduced_features(waypoints, target, agents, reach):
     """3-dim reduced feature vector, in REDUCED_FEATURE_NAMES order.
-    min_dist_to_agents is rescaled by this item's own |target| into a
-    scale-free "clearance as a fraction of trip distance" ratio, so a fitted
-    preference generalizes across CityWalker scenes with very different
-    absolute coordinate scale (this dataset's per-scene scale spread was
-    directly measured: single_clearance ranged ~0.1-24 in raw units across
-    just 40 items). total_turn_angle_deg and target_alignment_cos are already
-    scale-free (degrees / cosine similarity), so they pass through unscaled.
+    min_dist_to_agents is rescaled by this item's own candidate_reach_scale
+    (not |target|, see synthetic_crowd's docstring -- keeping the same
+    divisor used to *place* the crowd is what makes "clearance as a fraction
+    of how far the candidates go" a consistent, comparable ratio across
+    items) into a scale-free ratio, so a fitted preference generalizes across
+    CityWalker scenes with very different absolute coordinate scale (this
+    dataset's per-scene scale spread was directly measured: single_clearance
+    ranged ~0.1-24 in raw units across just 40 items). total_turn_angle_deg
+    and target_alignment_cos are already scale-free (degrees / cosine
+    similarity), so they pass through unscaled.
     """
     base = extract_features(waypoints, target)
     dist = agent_avoidance_feature(waypoints, agents)
-    target_scale = max(float(np.linalg.norm(target)), 1e-6)
     return np.array(
         [
             base[_BASE_IDX["total_turn_angle_deg"]],
             base[_BASE_IDX["target_alignment_cos"]],
-            dist / target_scale,
+            dist / max(reach, 1e-6),
         ],
         dtype=np.float64,
     )
@@ -155,13 +200,13 @@ def w_true_vector():
     return np.array([CROWD_AVOIDER_PROFILE[n] for n in REDUCED_FEATURE_NAMES], dtype=np.float64)
 
 
-def local_select_best(w, candidates, target, agents, scale=None):
-    scores = [bt_score(w, reduced_features(c, target, agents), scale=scale) for c in candidates]
+def local_select_best(w, candidates, target, agents, reach, scale=None):
+    scores = [bt_score(w, reduced_features(c, target, agents, reach), scale=scale) for c in candidates]
     best_idx = int(np.argmax(scores))
     return best_idx, scores[best_idx]
 
 
-def local_refine(waypoints, target, w, agents, num_steps=8, eps=1e-3, scale=None):
+def local_refine(waypoints, target, w, agents, reach, num_steps=8, eps=1e-3, scale=None):
     """Same backtracking-line-search design as src/preference/select_and_refine.py's
     refine_towards_preference (only accept a step if it actually improves the
     score, halving on failure) -- reimplemented locally over reduced_features()
@@ -171,7 +216,7 @@ def local_refine(waypoints, target, w, agents, num_steps=8, eps=1e-3, scale=None
     wp = np.array(waypoints, dtype=np.float64)
     target_scale = max(float(np.linalg.norm(target)), 1e-6)
     best_wp = wp
-    best_score = bt_score(w, reduced_features(best_wp, target, agents), scale=scale)
+    best_score = bt_score(w, reduced_features(best_wp, target, agents, reach), scale=scale)
     step = 0.02 * target_scale
     for _ in range(num_steps):
         grad = np.zeros_like(best_wp)
@@ -179,7 +224,7 @@ def local_refine(waypoints, target, w, agents, num_steps=8, eps=1e-3, scale=None
             for j in range(best_wp.shape[1]):
                 perturbed = best_wp.copy()
                 perturbed[i, j] += eps
-                s = bt_score(w, reduced_features(perturbed, target, agents), scale=scale)
+                s = bt_score(w, reduced_features(perturbed, target, agents, reach), scale=scale)
                 grad[i, j] = (s - best_score) / eps
         norm = np.linalg.norm(grad)
         if norm < 1e-8:
@@ -189,7 +234,7 @@ def local_refine(waypoints, target, w, agents, num_steps=8, eps=1e-3, scale=None
         cur_step = step
         for _ in range(6):
             candidate = best_wp + cur_step * direction
-            cand_score = bt_score(w, reduced_features(candidate, target, agents), scale=scale)
+            cand_score = bt_score(w, reduced_features(candidate, target, agents, reach), scale=scale)
             if cand_score > best_score:
                 best_wp, best_score = candidate, cand_score
                 step = cur_step
@@ -224,10 +269,21 @@ def main():
         except Exception as e:
             print(f"[WARN] failed: {e}")
             continue
-        agents = synthetic_crowd(target, args.num_agents, crowd_rng)
-        feats = [reduced_features(c, target, agents) for c in wp_pred]
+        reach = candidate_reach_scale(wp_pred)
+        agents = synthetic_crowd(wp_pred, args.num_agents, crowd_rng)
+        feats = [reduced_features(c, target, agents, reach) for c in wp_pred]
         per_item.append(
-            {"candidates": wp_pred, "gt": gt, "step_scale": step_scale, "target": target, "agents": agents, "feats": feats}
+            {
+                "candidates": wp_pred,
+                "gt": gt,
+                "step_scale": step_scale,
+                "target": target,
+                "agents": agents,
+                "reach": reach,
+                "feats": feats,
+                "images": item["images"],
+                "meta": item.get("meta"),
+            }
         )
 
     w_true = w_true_vector()
@@ -253,8 +309,8 @@ def main():
 
     results = []
     for rec in per_item:
-        candidates, gt, step_scale, target, agents = (
-            rec["candidates"], rec["gt"], rec["step_scale"], rec["target"], rec["agents"]
+        candidates, gt, step_scale, target, agents, reach = (
+            rec["candidates"], rec["gt"], rec["step_scale"], rec["target"], rec["agents"], rec["reach"]
         )
         cand_list = list(candidates)
 
@@ -262,12 +318,12 @@ def main():
         single_clearance = agent_avoidance_feature(candidates[0], agents)
         oracle_best_clearance = float(max(agent_avoidance_feature(c, agents) for c in cand_list))
 
-        best_idx, _ = local_select_best(w_hat, cand_list, target, agents, scale=scale)
+        best_idx, _ = local_select_best(w_hat, cand_list, target, agents, reach, scale=scale)
         selected = candidates[best_idx]
         selected_angle = max_angle_and_hit(selected, gt, step_scale)
         selected_clearance = agent_avoidance_feature(selected, agents)
 
-        refined = local_refine(selected, target, w_hat, agents, num_steps=args.refine_steps, scale=scale)
+        refined = local_refine(selected, target, w_hat, agents, reach, num_steps=args.refine_steps, scale=scale)
         refined_angle = max_angle_and_hit(refined, gt, step_scale)
         refined_clearance = agent_avoidance_feature(refined, agents)
 
@@ -280,6 +336,17 @@ def main():
                 "scorer_selected_clearance": selected_clearance,
                 "scorer_selected_refined_angle": refined_angle,
                 "scorer_selected_refined_clearance": refined_clearance,
+                "geometry": {
+                    "image": rec["images"][-1],
+                    "meta": rec["meta"],
+                    "target": target.tolist(),
+                    "gt": gt.tolist(),
+                    "agents": agents.tolist(),
+                    "single": candidates[0].tolist(),
+                    "all_candidates": [c.tolist() for c in cand_list],
+                    "selected": selected.tolist(),
+                    "refined": refined.tolist(),
+                },
             }
         )
 
