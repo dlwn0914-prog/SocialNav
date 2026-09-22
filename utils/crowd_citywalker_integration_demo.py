@@ -54,12 +54,24 @@ conflict). refine_towards_preference's unconstrained backtracking line search th
 chased that skewed clearance weight past what any of the 10 original candidates
 achieved (mean clearance 0.76 vs oracle-best-of-10's 0.26) while destroying angle
 accuracy (19.3 -> 65.0 deg mean). This is the most honest result this pipeline has
-produced: when clearance and target-tracking *genuinely* compete, N=10 comparisons
-+ unconstrained refinement does not yet resolve the tradeoff sensibly. Left
-unfixed as a documented finding rather than patched further -- candidate next
-steps: bound refine's total displacement to the original candidate spread (so it
-can only interpolate/nudge within observed diversity, not extrapolate arbitrarily
-far), and/or increase n_shot so the fit can separate the two competing features.
+produced: when clearance and target-tracking *genuinely* compete, an
+unconstrained refine does not resolve the tradeoff sensibly -- it just chases
+whichever feature the (still noisy, N=10) fit happened to overweight,
+arbitrarily far past anything the model itself proposed.
+
+Fixed via candidate_spread() + local_refine's max_step_per_waypoint (see their
+docstrings): each waypoint's refine displacement is now clipped to
+--refine-bound-scale (default 2) std-devs of how much the model's own 10
+candidates varied at that step, so refine can only interpolate within observed
+diversity, never extrapolate past it. Re-run after this fix: refined clearance
+(0.164) stayed *below* oracle-best-of-10 (0.241) instead of 3x past it, and
+angle no longer collapsed (21.8 -> 22.3 -> 21.2 deg, vs the earlier 19.3 -> 65.0
+deg blowup). Note flow-matching sampling has no fixed seed, so the model's own
+candidates differ run to run -- these before/after numbers aren't a fully
+controlled A/B (e.g. the fit's own cosine(w_true, w_hat) also moved, 0.19 ->
+0.54, from candidate-sampling noise alone), but the qualitative fix (no more
+runaway extrapolation past observed diversity) holds regardless. n_shot=10
+remains the standing limitation for separating competing features cleanly.
 
 Usage:
     PYTHONPATH=. python utils/crowd_citywalker_integration_demo.py \
@@ -106,6 +118,12 @@ def parse_args():
     p.add_argument("--category", default="crowd", choices=TEST_CATEGORIES)
     p.add_argument("--num-agents", type=int, default=6)
     p.add_argument("--refine-steps", type=int, default=8)
+    p.add_argument(
+        "--refine-bound-scale", type=float, default=2.0,
+        help="Cap each waypoint's refine displacement to this many std-devs of candidate_spread() "
+        "at that step index (see local_refine's docstring). 0 disables refinement entirely; "
+        "a very large value approximates the old unconstrained behavior.",
+    )
     p.add_argument("--output", default="crowd_citywalker_integration_demo.json")
     return p.parse_args()
 
@@ -146,6 +164,29 @@ def candidate_reach_scale(candidates):
     the scale everything crowd-related should use instead."""
     all_wp = np.concatenate([np.asarray(c, dtype=np.float64) for c in candidates], axis=0)
     return float(np.mean(np.linalg.norm(all_wp, axis=1)))
+
+
+def candidate_spread(candidates):
+    """Per-waypoint-index diversity (std of Euclidean distance from the
+    across-candidate centroid, one value per step t) across all of this
+    item's real candidates -- how much the model itself actually varied at
+    each step. Used to bound local_refine's displacement: past this, refine
+    is no longer nudging within what the model considers plausible, it is
+    extrapolating into territory none of the 10 real candidates expressed."""
+    arr = np.stack([np.asarray(c, dtype=np.float64) for c in candidates], axis=0)  # (N, T, 2)
+    centroid = arr.mean(axis=0)  # (T, 2)
+    dists = np.linalg.norm(arr - centroid[None, :, :], axis=-1)  # (N, T)
+    return dists.std(axis=0)  # (T,)
+
+
+def _clip_displacement(wp, origin, max_step):
+    """Clip each waypoint's displacement from `origin` to at most
+    `max_step[t]` (per-index), preserving direction -- a soft projection back
+    onto the allowed ball rather than rejecting the whole step."""
+    disp = wp - origin
+    dist = np.linalg.norm(disp, axis=-1, keepdims=True)
+    factor = np.minimum(1.0, max_step[:, None] / np.maximum(dist, 1e-9))
+    return origin + disp * factor
 
 
 def synthetic_crowd(candidates, num_agents, rng):
@@ -206,14 +247,26 @@ def local_select_best(w, candidates, target, agents, reach, scale=None):
     return best_idx, scores[best_idx]
 
 
-def local_refine(waypoints, target, w, agents, reach, num_steps=8, eps=1e-3, scale=None):
+def local_refine(waypoints, target, w, agents, reach, num_steps=8, eps=1e-3, scale=None, max_step_per_waypoint=None):
     """Same backtracking-line-search design as src/preference/select_and_refine.py's
     refine_towards_preference (only accept a step if it actually improves the
     score, halving on failure) -- reimplemented locally over reduced_features()
     instead of the shared module's fixed 8-dim feature space. See module
     docstring for why. Pass `scale` (from fit_preference_weights) when `w` is
-    a fitted weight vector in normalized space."""
+    a fitted weight vector in normalized space.
+
+    max_step_per_waypoint: (T,) array, typically bound_scale * candidate_spread(candidates)
+    (see module docstring's "clearance-vs-angle tradeoff" section). Each
+    candidate step is clipped so waypoint t never strays more than this far
+    from the *original* (pre-refine) waypoint -- without it, an unconstrained
+    line search can keep taking "improving" steps indefinitely once w_hat is
+    skewed toward one feature, extrapolating the path far outside anything
+    the model's own 10 candidates expressed (observed: mean clearance
+    exceeding oracle-best-of-10's, angle error more than tripling). Passing
+    None keeps the old unconstrained behavior.
+    """
     wp = np.array(waypoints, dtype=np.float64)
+    origin = wp.copy()
     target_scale = max(float(np.linalg.norm(target)), 1e-6)
     best_wp = wp
     best_score = bt_score(w, reduced_features(best_wp, target, agents, reach), scale=scale)
@@ -234,6 +287,8 @@ def local_refine(waypoints, target, w, agents, reach, num_steps=8, eps=1e-3, sca
         cur_step = step
         for _ in range(6):
             candidate = best_wp + cur_step * direction
+            if max_step_per_waypoint is not None:
+                candidate = _clip_displacement(candidate, origin, max_step_per_waypoint)
             cand_score = bt_score(w, reduced_features(candidate, target, agents, reach), scale=scale)
             if cand_score > best_score:
                 best_wp, best_score = candidate, cand_score
@@ -270,6 +325,7 @@ def main():
             print(f"[WARN] failed: {e}")
             continue
         reach = candidate_reach_scale(wp_pred)
+        spread = candidate_spread(wp_pred)
         agents = synthetic_crowd(wp_pred, args.num_agents, crowd_rng)
         feats = [reduced_features(c, target, agents, reach) for c in wp_pred]
         per_item.append(
@@ -280,6 +336,7 @@ def main():
                 "target": target,
                 "agents": agents,
                 "reach": reach,
+                "spread": spread,
                 "feats": feats,
                 "images": item["images"],
                 "meta": item.get("meta"),
@@ -309,8 +366,8 @@ def main():
 
     results = []
     for rec in per_item:
-        candidates, gt, step_scale, target, agents, reach = (
-            rec["candidates"], rec["gt"], rec["step_scale"], rec["target"], rec["agents"], rec["reach"]
+        candidates, gt, step_scale, target, agents, reach, spread = (
+            rec["candidates"], rec["gt"], rec["step_scale"], rec["target"], rec["agents"], rec["reach"], rec["spread"]
         )
         cand_list = list(candidates)
 
@@ -323,7 +380,11 @@ def main():
         selected_angle = max_angle_and_hit(selected, gt, step_scale)
         selected_clearance = agent_avoidance_feature(selected, agents)
 
-        refined = local_refine(selected, target, w_hat, agents, reach, num_steps=args.refine_steps, scale=scale)
+        max_step = args.refine_bound_scale * spread
+        refined = local_refine(
+            selected, target, w_hat, agents, reach,
+            num_steps=args.refine_steps, scale=scale, max_step_per_waypoint=max_step,
+        )
         refined_angle = max_angle_and_hit(refined, gt, step_scale)
         refined_clearance = agent_avoidance_feature(refined, agents)
 
