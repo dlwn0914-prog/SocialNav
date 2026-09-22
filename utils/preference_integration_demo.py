@@ -134,7 +134,9 @@ def main():
         selected = candidates[best_idx]
         selected_angle = max_angle_and_hit(selected, gt, step_scale)
 
-        refined = refine_towards_preference(selected, target, w_hat, num_steps=args.refine_steps, scale=scale)
+        refined = refine_towards_preference(
+            selected, target, w_hat, num_steps=args.refine_steps, scale=scale, candidates=list(candidates),
+        )
         refined_angle = max_angle_and_hit(refined, gt, step_scale)
 
         results.append(

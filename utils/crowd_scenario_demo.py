@@ -188,7 +188,7 @@ def main():
         assert names[sel_idx] == hat_best, "select_best/manual dot-product scoring disagree"
         refined = select_and_refine.refine_towards_preference(
             candidates_ego[sel_idx], target_ego, w_hat, agent_positions=agents_ego,
-            num_steps=8, scale=scale,
+            num_steps=8, scale=scale, candidates=candidates_ego,
         )
         refined_score = bt_score(w_hat, full_features(refined, target_ego, agents_ego), scale=scale)
         print(f"  guidance: selected={hat_best} (score={sel_score:.2f}) -> refined score={refined_score:.2f} "

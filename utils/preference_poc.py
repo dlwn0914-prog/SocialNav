@@ -112,7 +112,9 @@ def run_profile(name, profile, target=(0.0, 5.0), n_shot=10, n_holdout_candidate
     top1_agreement = int(true_best_idx == hat_best_idx)
     true_rank_of_hat_pick = int(np.sum(np.array(true_scores) > true_scores[hat_best_idx]))
 
-    refined = refine_towards_preference(holdout[hat_best_idx], target, w_hat, num_steps=5, lr=0.1, scale=scale)
+    refined = refine_towards_preference(
+        holdout[hat_best_idx], target, w_hat, num_steps=5, lr=0.1, scale=scale, candidates=holdout,
+    )
     score_before = np.dot(w_hat, extract_features(holdout[hat_best_idx], target) / scale)
     score_after = np.dot(w_hat, extract_features(refined, target) / scale)
     true_score_before = np.dot(w_true, extract_features(holdout[hat_best_idx], target))
