@@ -163,8 +163,8 @@ def main():
                 diff_feats.append(feats[b] - feats[a])
             labels.append(1.0)
 
-        w_hat = fit_preference_weights(np.array(diff_feats), np.array(labels), l2=1.0, lr=0.2, num_steps=800)
-        hat_scores = {n: float(np.dot(w_hat, feats[n])) for n in names}
+        w_hat, scale = fit_preference_weights(np.array(diff_feats), np.array(labels), l2=1.0, lr=0.2, num_steps=800)
+        hat_scores = {n: float(np.dot(w_hat, feats[n] / scale)) for n in names}
         hat_best = max(hat_scores, key=hat_scores.get)
 
         expected = EXPECTED_BEST[profile_name]
@@ -183,14 +183,14 @@ def main():
         # loop instead of just picking among the 3 fixed candidates.
         candidates_ego = [to_ego_frame(candidates_world[n], start) for n in names]
         sel_idx, sel_score, sel_scores = select_and_refine.select_best(
-            w_hat, candidates_ego, target_ego, agent_positions=agents_ego
+            w_hat, candidates_ego, target_ego, agent_positions=agents_ego, scale=scale
         )
         assert names[sel_idx] == hat_best, "select_best/manual dot-product scoring disagree"
         refined = select_and_refine.refine_towards_preference(
             candidates_ego[sel_idx], target_ego, w_hat, agent_positions=agents_ego,
-            num_steps=8,
+            num_steps=8, scale=scale,
         )
-        refined_score = bt_score(w_hat, full_features(refined, target_ego, agents_ego))
+        refined_score = bt_score(w_hat, full_features(refined, target_ego, agents_ego), scale=scale)
         print(f"  guidance: selected={hat_best} (score={sel_score:.2f}) -> refined score={refined_score:.2f} "
               f"(delta={refined_score - sel_score:+.2f})")
         print()

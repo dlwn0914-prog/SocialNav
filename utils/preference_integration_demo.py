@@ -87,30 +87,39 @@ def main():
         except Exception as e:
             print(f"[WARN] failed: {e}")
             continue
-        per_item.append({"item": item, "candidates": wp_pred, "gt": gt, "step_scale": step_scale, "target": target})
+        feats = [extract_features(c, target) for c in wp_pred]
+        per_item.append(
+            {"item": item, "candidates": wp_pred, "gt": gt, "step_scale": step_scale, "target": target, "feats": feats}
+        )
 
-    # --- Fit w_hat from N synthetic pairwise comparisons drawn from a pooled ---
-    # --- set of the model's own real candidates (not synthetic trajectories) ---
+    # --- Fit w_hat from N pairwise comparisons on the model's own real ---
+    # --- candidates (not synthetic trajectories), each drawn *within one ---
+    # --- randomly chosen item* (two of its own candidates) rather than from a
+    # --- pool across items: path_length (and, less directly, the other
+    # --- features it correlates with) scales with each CityWalker scene's own
+    # --- absolute coordinate size, so pooling across items before sampling
+    # --- pairs let cross-item scale variance dominate the fit instead of real
+    # --- within-item ranking signal (see utils/crowd_citywalker_integration_demo.py,
+    # --- where this was root-caused after w_hat repeatedly blew up on
+    # --- whichever feature had the smallest within-comparison variance). A
+    # --- real user also only ever judges "A vs B for this navigation
+    # --- instance", never across two unrelated scenes.
     w_true = w_true_vector()
-    pool_feats = []
-    for rec in per_item:
-        for c in rec["candidates"]:
-            pool_feats.append(extract_features(c, rec["target"]))
-    pool_feats = np.array(pool_feats)
-    print(f">>> candidate pool for fitting: {pool_feats.shape[0]} real candidates from {len(per_item)} items")
+    print(f">>> {len(per_item)} items x {args.num_samples} real candidates each")
 
     diff_feats, labels = [], []
     for _ in range(args.n_shot):
-        i, j = RNG.choice(len(pool_feats), size=2, replace=False)
-        p_i_over_j = predict_preference_prob(w_true, pool_feats[i], pool_feats[j])
+        rec = per_item[RNG.integers(len(per_item))]
+        i, j = RNG.choice(len(rec["feats"]), size=2, replace=False)
+        p_i_over_j = predict_preference_prob(w_true, rec["feats"][i], rec["feats"][j])
         if RNG.random() < p_i_over_j:
-            diff_feats.append(pool_feats[i] - pool_feats[j])
+            diff_feats.append(rec["feats"][i] - rec["feats"][j])
         else:
-            diff_feats.append(pool_feats[j] - pool_feats[i])
+            diff_feats.append(rec["feats"][j] - rec["feats"][i])
         labels.append(1.0)
-    w_hat = fit_preference_weights(np.array(diff_feats), np.array(labels), l2=1.0, lr=0.2, num_steps=800)
+    w_hat, scale = fit_preference_weights(np.array(diff_feats), np.array(labels), l2=1.0, lr=0.2, num_steps=800)
     print("w_true:", dict(zip(FEATURE_NAMES, np.round(w_true, 2))))
-    print("w_hat :", dict(zip(FEATURE_NAMES, np.round(w_hat, 2))))
+    print("w_hat (normalized space):", dict(zip(FEATURE_NAMES, np.round(w_hat, 2))))
 
     # --- Evaluate on each item's own real candidates: naive vs scorer-selected+refined ---
     results = []
@@ -121,11 +130,11 @@ def main():
         single_angle = max_angle_and_hit(candidates[0], gt, step_scale)
         oracle_best_angle = float(min(max_angle_and_hit(c, gt, step_scale) for c in candidates))
 
-        best_idx, _, _ = select_best(w_hat, list(candidates), target)
+        best_idx, _, _ = select_best(w_hat, list(candidates), target, scale=scale)
         selected = candidates[best_idx]
         selected_angle = max_angle_and_hit(selected, gt, step_scale)
 
-        refined = refine_towards_preference(selected, target, w_hat, num_steps=args.refine_steps, lr=0.05)
+        refined = refine_towards_preference(selected, target, w_hat, num_steps=args.refine_steps, scale=scale)
         refined_angle = max_angle_and_hit(refined, gt, step_scale)
 
         results.append(
@@ -151,7 +160,11 @@ def main():
     }
     print(json.dumps(summary, indent=2, ensure_ascii=False))
     with open(args.output, "w") as f:
-        json.dump({"summary": summary, "w_true": w_true.tolist(), "w_hat": w_hat.tolist(), "per_item": results}, f, indent=2)
+        json.dump(
+            {"summary": summary, "w_true": w_true.tolist(), "w_hat": w_hat.tolist(), "scale": scale.tolist(), "per_item": results},
+            f,
+            indent=2,
+        )
     print(f"saved to {args.output}")
 
 

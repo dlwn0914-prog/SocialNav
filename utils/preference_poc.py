@@ -96,19 +96,25 @@ def run_profile(name, profile, target=(0.0, 5.0), n_shot=10, n_holdout_candidate
     train_candidates = make_synthetic_candidates(target, num_candidates=12)
     diff_feats, labels = sample_pairwise_comparisons(w_true, train_candidates, target, n_shot)
 
-    w_hat = fit_preference_weights(diff_feats, labels, l2=1.0, lr=0.2, num_steps=800)
+    w_hat, scale = fit_preference_weights(diff_feats, labels, l2=1.0, lr=0.2, num_steps=800)
 
-    cos_sim = float(np.dot(w_true, w_hat) / (np.linalg.norm(w_true) * np.linalg.norm(w_hat) + 1e-8))
+    # w_hat is in normalized space (see bradley_terry.py); compare against
+    # w_true in that same space (w_true * scale) rather than raw, otherwise
+    # this cosine similarity is comparing two different unit systems.
+    w_true_normalized = w_true * scale
+    cos_sim = float(
+        np.dot(w_true_normalized, w_hat) / (np.linalg.norm(w_true_normalized) * np.linalg.norm(w_hat) + 1e-8)
+    )
 
     holdout = make_synthetic_candidates(target, num_candidates=n_holdout_candidates)
     true_best_idx, _, true_scores = select_best(w_true, holdout, target)
-    hat_best_idx, _, hat_scores = select_best(w_hat, holdout, target)
+    hat_best_idx, _, hat_scores = select_best(w_hat, holdout, target, scale=scale)
     top1_agreement = int(true_best_idx == hat_best_idx)
     true_rank_of_hat_pick = int(np.sum(np.array(true_scores) > true_scores[hat_best_idx]))
 
-    refined = refine_towards_preference(holdout[hat_best_idx], target, w_hat, num_steps=5, lr=0.1)
-    score_before = np.dot(w_hat, extract_features(holdout[hat_best_idx], target))
-    score_after = np.dot(w_hat, extract_features(refined, target))
+    refined = refine_towards_preference(holdout[hat_best_idx], target, w_hat, num_steps=5, lr=0.1, scale=scale)
+    score_before = np.dot(w_hat, extract_features(holdout[hat_best_idx], target) / scale)
+    score_after = np.dot(w_hat, extract_features(refined, target) / scale)
     true_score_before = np.dot(w_true, extract_features(holdout[hat_best_idx], target))
     true_score_after = np.dot(w_true, extract_features(refined, target))
 

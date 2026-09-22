@@ -23,10 +23,26 @@ def fit_preference_weights(diff_features, labels, l2=1.0, lr=0.1, num_steps=500,
         N<D comparisons the unregularized MLE is not identified).
     normalize: rescale each feature dimension by its std across `diff_features`
         before fitting, so features with very different natural scales (e.g.
-        degrees vs. meters) get comparable weights. The returned `w` is in the
-        *original* (unnormalized) feature space, so `score()`/`select_best()`
-        keep using raw `extract_features()` output unchanged.
-    Returns: w, (D,) array.
+        degrees vs. meters) get comparable weights.
+
+    Returns: (w, scale), both (D,) arrays. `w` is in *normalized* space (it
+    was fit against `diff_features / scale`) and is returned as-is -- NOT
+    divided back by `scale` into the original feature space. An earlier
+    version did that final `w / scale` un-normalization, which blows up
+    whenever some feature's comparison-diff std is small: dividing by a small
+    number inflates that dimension's raw-space weight arbitrarily, regardless
+    of how many/which features are used (seen repeatedly across
+    utils/crowd_scenario_demo.py, utils/preference_integration_demo.py and
+    utils/crowd_citywalker_integration_demo.py -- reducing feature count just
+    moved the blowup to a *different* dimension each time, confirming the
+    normalize/un-normalize step itself was the bug, not feature selection).
+
+    Callers must score/compare using the *same* `scale`: divide any raw
+    feature vector by `scale` before dotting it with `w` -- see score()'s and
+    predict_preference_prob()'s `scale` argument, and
+    src/preference/select_and_refine.py's `scale` passthrough. A hand-specified
+    ground-truth `w_true` (not fit by this function) stays in raw feature
+    space and should be used with `scale=None` (the default).
     """
     diff_features = np.asarray(diff_features, dtype=np.float64)
     labels = np.asarray(labels, dtype=np.float64)
@@ -48,14 +64,24 @@ def fit_preference_weights(diff_features, labels, l2=1.0, lr=0.1, num_steps=500,
         grad = x.T @ (labels - p) / n - l2 * w / n
         w = w + lr * grad
 
-    return w / scale
+    return w, scale
 
 
-def predict_preference_prob(w, feat_a, feat_b):
-    """P(A preferred over B) under the fitted weights."""
-    return float(_sigmoid(np.dot(w, np.asarray(feat_a) - np.asarray(feat_b))))
+def predict_preference_prob(w, feat_a, feat_b, scale=None):
+    """P(A preferred over B) under the fitted weights. Pass `scale` (as
+    returned by fit_preference_weights) when `w` is in normalized space;
+    leave it None (default) for a hand-specified raw-space `w_true`."""
+    diff = np.asarray(feat_a, dtype=np.float64) - np.asarray(feat_b, dtype=np.float64)
+    if scale is not None:
+        diff = diff / np.asarray(scale, dtype=np.float64)
+    return float(_sigmoid(np.dot(w, diff)))
 
 
-def score(w, feats):
-    """Scalar preference score of a single candidate's feature vector."""
+def score(w, feats, scale=None):
+    """Scalar preference score of a single candidate's feature vector. Pass
+    `scale` when `w` is in normalized space; leave it None (default) for a
+    hand-specified raw-space `w_true`."""
+    feats = np.asarray(feats, dtype=np.float64)
+    if scale is not None:
+        feats = feats / np.asarray(scale, dtype=np.float64)
     return float(np.dot(w, feats))
