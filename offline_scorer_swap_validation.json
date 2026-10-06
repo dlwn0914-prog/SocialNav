@@ -1,0 +1,136 @@
+{
+  "results": [
+    {
+      "scenario": "offside_3",
+      "n_safe": 4,
+      "queries_used": 3,
+      "original_pick": {
+        "global_idx": 1,
+        "turn_angle_deg": 163.68,
+        "target_alignment_cos": 1.0,
+        "clearance_ratio": 0.67,
+        "pretrained_score": 0.7
+      },
+      "personalized_pick": {
+        "global_idx": 13,
+        "turn_angle_deg": 100.84,
+        "target_alignment_cos": 1.0,
+        "clearance_ratio": 0.645
+      },
+      "true_best": {
+        "global_idx": 13,
+        "turn_angle_deg": 100.84,
+        "target_alignment_cos": 1.0,
+        "clearance_ratio": 0.645
+      },
+      "swap_changed_decision": true,
+      "personalized_matches_true_best": true
+    },
+    {
+      "scenario": "offside_4_right",
+      "n_safe": 13,
+      "queries_used": 10,
+      "original_pick": {
+        "global_idx": 9,
+        "turn_angle_deg": 279.42,
+        "target_alignment_cos": 1.0,
+        "clearance_ratio": 0.867,
+        "pretrained_score": 1.357
+      },
+      "personalized_pick": {
+        "global_idx": 13,
+        "turn_angle_deg": 255.2,
+        "target_alignment_cos": 1.0,
+        "clearance_ratio": 0.88
+      },
+      "true_best": {
+        "global_idx": 11,
+        "turn_angle_deg": 233.16,
+        "target_alignment_cos": 1.0,
+        "clearance_ratio": 0.682
+      },
+      "swap_changed_decision": true,
+      "personalized_matches_true_best": false
+    },
+    {
+      "scenario": "offside_5_wide",
+      "n_safe": 20,
+      "queries_used": 10,
+      "original_pick": {
+        "global_idx": 7,
+        "turn_angle_deg": 7.73,
+        "target_alignment_cos": 1.0,
+        "clearance_ratio": 0.812,
+        "pretrained_score": 1.366
+      },
+      "personalized_pick": {
+        "global_idx": 7,
+        "turn_angle_deg": 7.73,
+        "target_alignment_cos": 1.0,
+        "clearance_ratio": 0.812
+      },
+      "true_best": {
+        "global_idx": 7,
+        "turn_angle_deg": 7.73,
+        "target_alignment_cos": 1.0,
+        "clearance_ratio": 0.812
+      },
+      "swap_changed_decision": false,
+      "personalized_matches_true_best": true
+    },
+    {
+      "scenario": "offside_2_left",
+      "n_safe": 18,
+      "queries_used": 10,
+      "original_pick": {
+        "global_idx": 10,
+        "turn_angle_deg": 174.09,
+        "target_alignment_cos": 1.0,
+        "clearance_ratio": 0.725,
+        "pretrained_score": 1.011
+      },
+      "personalized_pick": {
+        "global_idx": 7,
+        "turn_angle_deg": 97.42,
+        "target_alignment_cos": 1.0,
+        "clearance_ratio": 0.726
+      },
+      "true_best": {
+        "global_idx": 11,
+        "turn_angle_deg": 86.18,
+        "target_alignment_cos": 1.0,
+        "clearance_ratio": 0.641
+      },
+      "swap_changed_decision": true,
+      "personalized_matches_true_best": false
+    },
+    {
+      "scenario": "offside_3_left",
+      "n_safe": 20,
+      "queries_used": 10,
+      "original_pick": {
+        "global_idx": 19,
+        "turn_angle_deg": 194.36,
+        "target_alignment_cos": 1.0,
+        "clearance_ratio": 1.047,
+        "pretrained_score": 1.372
+      },
+      "personalized_pick": {
+        "global_idx": 19,
+        "turn_angle_deg": 194.36,
+        "target_alignment_cos": 1.0,
+        "clearance_ratio": 1.047
+      },
+      "true_best": {
+        "global_idx": 11,
+        "turn_angle_deg": 191.86,
+        "target_alignment_cos": 1.0,
+        "clearance_ratio": 1.087
+      },
+      "swap_changed_decision": false,
+      "personalized_matches_true_best": false
+    }
+  ],
+  "n_changed": 3,
+  "n_matches_true": 2
+}

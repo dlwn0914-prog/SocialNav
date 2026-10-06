@@ -1,0 +1,69 @@
+{
+  "scenarios": [
+    {
+      "scenario": "cluster_4",
+      "n_people": 4,
+      "n_candidates": 20,
+      "n_safe": 0,
+      "used_fallback": true,
+      "margins_min": -0.6063692309968768,
+      "margins_max": -0.40132390545963786,
+      "query_test": "skipped (fewer than 2 candidates survive safety filtering -- nothing to compare)"
+    },
+    {
+      "scenario": "dense_6",
+      "n_people": 6,
+      "n_candidates": 20,
+      "n_safe": 0,
+      "used_fallback": true,
+      "margins_min": -0.6569216192457619,
+      "margins_max": -0.5290644250388536,
+      "query_test": "skipped (fewer than 2 candidates survive safety filtering -- nothing to compare)"
+    },
+    {
+      "scenario": "offside_3",
+      "n_people": 3,
+      "n_candidates": 20,
+      "n_safe": 4,
+      "used_fallback": false,
+      "margins_min": -0.13680530833633742,
+      "margins_max": 0.06289924002563263,
+      "query_test": {
+        "n_queryable_safe_candidates": 4,
+        "queries_used": 3,
+        "random_final_cos": 0.6843182452135933,
+        "random_final_top1": 0.75,
+        "active_final_cos": 0.9705060072231237,
+        "active_final_top1": 1.0
+      }
+    },
+    {
+      "scenario": "sparse_1",
+      "n_people": 1,
+      "n_candidates": 20,
+      "n_safe": 0,
+      "used_fallback": true,
+      "margins_min": -0.6279284937843752,
+      "margins_max": -0.2510264194137741,
+      "query_test": "skipped (fewer than 2 candidates survive safety filtering -- nothing to compare)"
+    },
+    {
+      "scenario": "spread_3",
+      "n_people": 3,
+      "n_candidates": 20,
+      "n_safe": 0,
+      "used_fallback": true,
+      "margins_min": -0.6263644314201374,
+      "margins_max": -0.4293699739171969,
+      "query_test": "skipped (fewer than 2 candidates survive safety filtering -- nothing to compare)"
+    }
+  ],
+  "aggregate": {
+    "n_scenarios_queryable": 1,
+    "n_scenarios_fallback_only": 4,
+    "mean_random_final_cos": 0.6843182452135933,
+    "mean_active_final_cos": 0.9705060072231237,
+    "mean_random_final_top1": 0.75,
+    "mean_active_final_top1": 1.0
+  }
+}

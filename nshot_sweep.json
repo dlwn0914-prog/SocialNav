@@ -1,0 +1,179 @@
+{
+  "n_shots": [
+    5,
+    10,
+    20,
+    30
+  ],
+  "repeats": 5,
+  "sweep": {
+    "5": [
+      {
+        "cos_sim": 0.11508793111926494,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 28.93191702285509,
+        "mean_refined_clearance": 0.26392460769742315
+      },
+      {
+        "cos_sim": 0.35214866037963877,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 29.10919217811472,
+        "mean_refined_clearance": 0.05675180353755436
+      },
+      {
+        "cos_sim": 0.9934951760593819,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 24.638635447603132,
+        "mean_refined_clearance": 0.15005937366137978
+      },
+      {
+        "cos_sim": 0.9791514425589595,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 25.179427424372005,
+        "mean_refined_clearance": 0.12183600336863028
+      },
+      {
+        "cos_sim": 0.7346397533922298,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 22.881954952831713,
+        "mean_refined_clearance": 0.06935924136169264
+      }
+    ],
+    "10": [
+      {
+        "cos_sim": 0.8885540417003179,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 26.458785631404208,
+        "mean_refined_clearance": 0.06999214720127603
+      },
+      {
+        "cos_sim": 0.7882325603628086,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 27.17490737094092,
+        "mean_refined_clearance": 0.06476529545544517
+      },
+      {
+        "cos_sim": 0.9261032571942182,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 26.53489144568463,
+        "mean_refined_clearance": 0.17700164658198092
+      },
+      {
+        "cos_sim": 0.6134072831177163,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 26.8113969848755,
+        "mean_refined_clearance": 0.26406996538352767
+      },
+      {
+        "cos_sim": 0.8641885416625371,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 26.768411733260457,
+        "mean_refined_clearance": 0.1192242289123894
+      }
+    ],
+    "20": [
+      {
+        "cos_sim": 0.8110435022105174,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 27.10412050027592,
+        "mean_refined_clearance": 0.05873423276229841
+      },
+      {
+        "cos_sim": 0.6483355786783661,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 23.62853919159793,
+        "mean_refined_clearance": 0.24052055623922092
+      },
+      {
+        "cos_sim": 0.95039031743548,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 24.40272955625273,
+        "mean_refined_clearance": 0.12129663731344129
+      },
+      {
+        "cos_sim": 0.9939278477671287,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 24.614777484656493,
+        "mean_refined_clearance": 0.14241183432543442
+      },
+      {
+        "cos_sim": 0.7952907623267033,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 27.218465435102495,
+        "mean_refined_clearance": 0.22001229669215844
+      }
+    ],
+    "30": [
+      {
+        "cos_sim": 0.9717100860470189,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 24.530569105508967,
+        "mean_refined_clearance": 0.12187081206305202
+      },
+      {
+        "cos_sim": 0.7536660728774065,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 26.336071187177673,
+        "mean_refined_clearance": 0.22993209294867106
+      },
+      {
+        "cos_sim": 0.9653653136226544,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 25.169945307704758,
+        "mean_refined_clearance": 0.10580140129101914
+      },
+      {
+        "cos_sim": 0.9603437973578085,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 24.879665251438606,
+        "mean_refined_clearance": 0.17382970927969693
+      },
+      {
+        "cos_sim": 0.942077659107997,
+        "mean_single_angle": 27.370684003829957,
+        "mean_single_clearance": 0.11733352872823918,
+        "mean_oracle_clearance": 0.19965183534929196,
+        "mean_refined_angle": 27.103765156017158,
+        "mean_refined_clearance": 0.15957066904531897
+      }
+    ]
+  }
+}
