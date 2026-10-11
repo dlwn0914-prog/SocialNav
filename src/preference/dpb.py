@@ -56,21 +56,49 @@ class DPBStrategy:
     preference, at the cost of some stationary-case efficiency (per the
     paper's own regret bound, which is looser the faster theta* drifts)."""
 
-    def __init__(self, gamma=1.0, lam=1.0, norm_bound=5.0, alpha_scale=1.0, rng=None):
+    def __init__(self, gamma=0.8, lam=1.0, norm_bound=5.0, alpha_scale=1.0, rng=None, discount_unit="round"):
+        """gamma=0.8 default: swept over {0.5,...,1.0} on both a stationary
+        and a cross-session-drift synthetic user (utils/dpb_gamma_sweep.py)
+        -- 0.8 was best on both (stationary cosine 0.486, drift-recovery
+        cosine 0.544), not just picked arbitrarily like the gamma=0.7 used
+        in this module's earlier commit and every test script before the
+        sweep. Too low (0.5-0.6) forgets useful within-session evidence
+        even when nothing drifted; too high (0.9-1.0) can't track drift
+        fast enough (gamma=1.0, i.e. no discount, drops to 0.225 in the
+        drift condition).
+
+        discount_unit: "round" (default) ages every past comparison by
+        gamma**(queries ago) -- appropriate if a user's preference might
+        shift even within one N<=10 sitting. "session" ages comparisons by
+        gamma**(sessions ago) instead -- every comparison made in the
+        CURRENT session (call new_session() to advance it) is weighted
+        equally (no within-session decay), and only whole PAST sessions
+        get discounted as a block. Use "session" when drift is expected
+        across separate sittings (different day/context), not within one."""
         self.gamma = gamma
         self.lam = lam
         self.norm_bound = norm_bound
         self.alpha_scale = alpha_scale
         self.rng = rng or np.random.default_rng()
-        self.diff_feats, self.labels, self.weights_at_round = [], [], []
+        self.discount_unit = discount_unit
+        self.diff_feats, self.labels, self.weights_at_round, self.session_at_round = [], [], [], []
         self.t = 0
+        self.current_session = 0
         self.theta_hat = None
+
+    def new_session(self):
+        """Call once at the start of each new sitting, when discount_unit='session'."""
+        self.current_session += 1
+
+    def _age(self, s):
+        if self.discount_unit == "session":
+            return self.current_session - self.session_at_round[s]
+        return self.t - self.weights_at_round[s]
 
     def _V(self, dim):
         V = self.lam * np.eye(dim)
         for s, X in enumerate(self.diff_feats):
-            age = self.t - self.weights_at_round[s]
-            V += (self.gamma ** age) * np.outer(X, X)
+            V += (self.gamma ** self._age(s)) * np.outer(X, X)
         return V
 
     def select(self, feats):
@@ -98,10 +126,10 @@ class DPBStrategy:
         self.diff_feats.append(X)
         self.labels.append(label)
         self.weights_at_round.append(self.t)
+        self.session_at_round.append(self.current_session)
         self.t += 1
 
-        dim = len(X)
-        weights = np.array([self.gamma ** (self.t - 1 - r) for r in self.weights_at_round])
+        weights = np.array([self.gamma ** self._age(s) for s in range(len(self.diff_feats))])
         try:
             self.theta_hat = fit_discounted_mle(
                 np.array(self.diff_feats), np.array(self.labels), weights, norm_bound=self.norm_bound
