@@ -24,6 +24,12 @@ Protocol (identical for every method):
   - Pairing: within a session every method sees the same pool and theta*,
     so method differences are reported as paired differences vs ActiveQuery
     with 95% bootstrap CIs.
+  - --estimator: "native" lets each strategy recommend from its own
+    estimator (norm-constrained MLE for ActiveQuery/Random/Fisher/DPB,
+    Laplace MAP for MaxInP/TS/EUBO). "mle" / "map" refit ONE shared
+    estimator on each method's own answered queries for the recommendation
+    and cosine, so selection-rule effects are separated from estimator
+    effects (queries are still chosen by each strategy's own rule).
 
 Usage:
     PYTHONPATH=. .venv/bin/python utils/unified_query_benchmark.py --track real --repeats 30
@@ -38,11 +44,11 @@ import time
 import numpy as np
 
 from src.preference.features import extract_features
-from src.preference.active_query import ActiveQueryStrategy, RandomQueryStrategy
+from src.preference.active_query import ActiveQueryStrategy, RandomQueryStrategy, fit_logit_mle
 from src.preference.dpb import DPBStrategy
 from src.preference.fisher_optimal import FisherOptimalStrategy
 from src.preference.maxinp import MaxInPStrategy
-from src.preference.bayesian_query import TopTwoTSStrategy, EUBOStrategy
+from src.preference.bayesian_query import TopTwoTSStrategy, EUBOStrategy, laplace_posterior
 from utils.fisher_optimal_on_real_candidates import load_scenario_feats
 from utils.preference_poc import make_synthetic_candidates
 
@@ -76,25 +82,37 @@ def cosine(a, b):
     return float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b)))
 
 
-def run_session(strategy, feats, theta_star, rng, n_queries):
+def shared_estimate(history, dim, estimator):
+    """history: list of winner - loser feature diffs."""
+    if not history:
+        return None
+    if estimator == "mle":
+        return fit_logit_mle(np.array(history), np.ones(len(history)))
+    return laplace_posterior(np.array(history), dim)[0]
+
+
+def run_session(strategy, feats, theta_star, rng, n_queries, estimator="native"):
     u = feats @ theta_star
     u_best, u_range = u.max(), max(u.max() - u.min(), 1e-8)
     true_best = int(np.argmax(u))
     regret, top1, cos = [], [], []
-    used, frozen = 0, None
+    used, stopped, history, theta = 0, False, [], None
     for _ in range(n_queries):
-        if frozen is None:
+        if not stopped:
             i, j = strategy.select(feats)
             if strategy.done():
-                frozen = strategy.best(feats)
+                stopped = True
             else:
                 p_i = 1.0 / (1.0 + np.exp(-(u[i] - u[j])))
-                strategy.update(feats, i, j, i if rng.random() < p_i else j)
+                winner = i if rng.random() < p_i else j
+                strategy.update(feats, i, j, winner)
+                history.append(feats[winner] - feats[j if winner == i else i])
                 used += 1
-        rec = frozen if frozen is not None else strategy.best(feats)
+                theta = strategy.theta_hat if estimator == "native" else shared_estimate(history, feats.shape[1], estimator)
+        rec = int(np.argmax(feats @ theta)) if theta is not None else strategy.best(feats)
         regret.append(float((u_best - u[rec]) / u_range))
         top1.append(float(rec == true_best))
-        cos.append(cosine(strategy.theta_hat, theta_star))
+        cos.append(cosine(theta, theta_star))
     return {"regret": regret, "top1": top1, "cos": cos, "queries_used": used}
 
 
@@ -103,7 +121,7 @@ def build_sessions(args, rng):
     if args.track == "real":
         pools = []
         for path in sorted(glob.glob(os.path.join(args.scenario_dir, "scenario_*.json"))):
-            feats_raw = load_scenario_feats(path)
+            feats_raw = load_scenario_feats(path, args.candidates, args.moving_people)
             if feats_raw is None:
                 print(f"{os.path.basename(path)}: skipped (fallback or <2 safe candidates)")
                 continue
@@ -133,6 +151,11 @@ def main():
     p.add_argument("--k", type=int, default=20, help="synthetic track: candidates per pool")
     p.add_argument("--n-queries", type=int, default=10)
     p.add_argument("--theta-norm", type=float, default=2.0)
+    p.add_argument("--estimator", choices=["native", "mle", "map"], default="native")
+    p.add_argument("--candidates", choices=["candidates", "raw_candidates"], default="candidates",
+                   help="real track: PRIEST-refined or pre-refinement flow candidates")
+    p.add_argument("--moving-people", action="store_true",
+                   help="real track: safety filter predicts people at constant velocity")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", default=None)
     args = p.parse_args()
@@ -147,7 +170,7 @@ def main():
         for m, make in METHODS.items():
             # same seed per method -> same feedback-noise stream where queries coincide
             srng = np.random.default_rng(session_seed)
-            raw[m].append(run_session(make(srng), feats, theta_star, srng, args.n_queries))
+            raw[m].append(run_session(make(srng), feats, theta_star, srng, args.n_queries, args.estimator))
         pools_seen.append({"pool": pool_name, "K": int(feats.shape[0]), "dim": int(feats.shape[1])})
         if (s + 1) % 20 == 0:
             print(f"  {s + 1} sessions done ({time.time() - t0:.0f}s)", flush=True)
@@ -155,7 +178,7 @@ def main():
     n = len(pools_seen)
     brng = np.random.default_rng(args.seed + 1)
     summary = {}
-    print(f"\n=== {args.track} track: {n} sessions, N={args.n_queries}, ||theta*||={args.theta_norm} ===")
+    print(f"\n=== {args.track} track: {n} sessions, N={args.n_queries}, ||theta*||={args.theta_norm}, estimator={args.estimator} ===")
     print(f"{'method':>16} {'regret@N [95% CI]':>26} {'top1@N':>8} {'cos@N':>7} {'d_regret vs ' + REFERENCE + ' [95% CI]':>36} {'q_used':>7}")
     ref_final = np.array([r["regret"][-1] for r in raw[REFERENCE]])
     for m in METHODS:

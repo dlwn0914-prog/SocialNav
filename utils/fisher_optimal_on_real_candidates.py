@@ -58,9 +58,13 @@ def cos_to(theta_hat, w_true_norm):
     return float(np.dot(w_true_norm, theta_hat) / (np.linalg.norm(w_true_norm) * np.linalg.norm(theta_hat)))
 
 
-def load_scenario_feats(path):
+def load_scenario_feats(path, candidate_key="candidates", moving_people=False):
+    """candidate_key: "candidates" (PRIEST-refined) or "raw_candidates" (flow
+    samples before refinement, in files from the updated extractor).
+    moving_people: safety-check people at constant velocity ("people_vel",
+    "traj_duration" in the file) instead of frozen at t=0."""
     d = json.load(open(path))
-    cands = [np.array(c, dtype=np.float64) for c in d["candidates"]]
+    cands = [np.array(c, dtype=np.float64) for c in d[candidate_key]]
     goal = np.array(d["goal"], dtype=np.float64)
     people = np.array(d["people"], dtype=np.float64)
     people = people[np.linalg.norm(people, axis=1) < 500]
@@ -68,7 +72,11 @@ def load_scenario_feats(path):
     if static_obs.size:
         static_obs = static_obs[np.linalg.norm(static_obs, axis=1) > 1e-5]
 
-    filt = filter_safe_candidates(cands, static_obs=static_obs, dynamic_obs=people)
+    vel = duration = None
+    if moving_people:
+        vel = np.array(d["people_vel"], dtype=np.float64).reshape(-1, 2)
+        duration = float(d["traj_duration"])
+    filt = filter_safe_candidates(cands, static_obs=static_obs, dynamic_obs=people, dynamic_vel=vel, duration=duration)
     if filt["used_fallback"] or len(filt["safe_indices"]) < 2:
         return None
 

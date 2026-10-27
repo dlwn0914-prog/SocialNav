@@ -36,7 +36,8 @@ STATIC_RADIUS = 0.5    # PRIEST's static_obstacle_semi_{minor,major}_axis
 DYNAMIC_RADIUS = 0.68  # PRIEST's dynamic_obstacle_semi_{minor,major}_axis
 
 
-def _min_clearance_margin(waypoints, static_obs, dynamic_obs, static_radius, dynamic_radius):
+def _min_clearance_margin(waypoints, static_obs, dynamic_obs, static_radius, dynamic_radius,
+                          dynamic_vel=None, duration=None):
     """(clearance - required_radius) minimized over every waypoint x every
     obstacle, for one candidate. >=0 means this candidate never enters
     the safety ellipse of any obstacle anywhere along its path (safe).
@@ -53,7 +54,14 @@ def _min_clearance_margin(waypoints, static_obs, dynamic_obs, static_radius, dyn
 
     if dynamic_obs is not None and len(dynamic_obs) > 0:
         do = np.asarray(dynamic_obs, dtype=np.float64)
-        d = np.linalg.norm(wp[:, None, :] - do[None, :, :], axis=-1)  # (T, D)
+        if dynamic_vel is not None and duration is not None:
+            # constant-velocity prediction: waypoint k is checked against where each
+            # person will be at its own time t_k, not where they stand at t=0
+            t = np.linspace(0.0, duration, len(wp))
+            do_t = do[None, :, :] + t[:, None, None] * np.asarray(dynamic_vel, dtype=np.float64)[None, :, :]
+            d = np.linalg.norm(wp[:, None, :] - do_t, axis=-1)  # (T, D)
+        else:
+            d = np.linalg.norm(wp[:, None, :] - do[None, :, :], axis=-1)  # (T, D)
         margins.append((d - dynamic_radius).min())
 
     if not margins:
@@ -62,7 +70,8 @@ def _min_clearance_margin(waypoints, static_obs, dynamic_obs, static_radius, dyn
 
 
 def filter_safe_candidates(candidates, static_obs=None, dynamic_obs=None,
-                            static_radius=STATIC_RADIUS, dynamic_radius=DYNAMIC_RADIUS):
+                            static_radius=STATIC_RADIUS, dynamic_radius=DYNAMIC_RADIUS,
+                            dynamic_vel=None, duration=None):
     """Hard safety filter + crowded-scene fallback.
 
     candidates: list of (T, 2) waypoint arrays, one per trajectory candidate.
@@ -72,6 +81,12 @@ def filter_safe_candidates(candidates, static_obs=None, dynamic_obs=None,
     static_radius / dynamic_radius: collision ellipse semi-axes; defaults
         match PRIEST's own values (see module docstring) -- override only
         if a different robot footprint or PRIEST config is in use.
+    dynamic_vel / duration: (N, 2) velocities of dynamic_obs and the
+        trajectory's duration in seconds (waypoints assumed evenly spaced
+        in time). Given both, people move at constant velocity during the
+        check; omitted, people are frozen at t=0 for the whole path -- which
+        rejects e.g. following someone walking the same way, and on Grand
+        Central layouts flagged 2-3x more scenes as having <2 safe candidates.
 
     Returns dict:
       safe_indices: indices into `candidates` that pass the hard filter.
@@ -83,7 +98,7 @@ def filter_safe_candidates(candidates, static_obs=None, dynamic_obs=None,
                      fallback path was taken.
     """
     margins = np.array([
-        _min_clearance_margin(c, static_obs, dynamic_obs, static_radius, dynamic_radius)
+        _min_clearance_margin(c, static_obs, dynamic_obs, static_radius, dynamic_radius, dynamic_vel, duration)
         for c in candidates
     ])
     safe = np.where(margins >= 0)[0]
