@@ -59,14 +59,16 @@ def cos_to(theta_hat, w_true_norm):
 
 
 def load_scenario_feats(path, candidate_key="candidates", moving_people=False, return_candidates=False,
-                        social=False):
+                        social=False, dynamic_radius=None):
     """candidate_key: "candidates" (PRIEST-refined) or "raw_candidates" (flow
     samples before refinement, in files from the updated extractor).
     moving_people: safety-check people at constant velocity ("people_vel",
     "traj_duration" in the file) instead of frozen at t=0.
     social: append min_dist_moving, passing_side, intrusion_time_s
     (src/preference/features.social_features; progress_m left out -- it is
-    mostly speed) to the 3 reduced features."""
+    mostly speed) to the 3 reduced features.
+    dynamic_radius: safety-filter radius around people [m]; None = the
+    filter's default (PRIEST's 0.68)."""
     d = json.load(open(path))
     cands = [np.array(c, dtype=np.float64) for c in d[candidate_key]]
     goal = np.array(d["goal"], dtype=np.float64)
@@ -81,7 +83,9 @@ def load_scenario_feats(path, candidate_key="candidates", moving_people=False, r
     if moving_people:
         vel = np.array(d["people_vel"], dtype=np.float64).reshape(-1, 2)[real]
         duration = float(d["traj_duration"])
-    filt = filter_safe_candidates(cands, static_obs=static_obs, dynamic_obs=people, dynamic_vel=vel, duration=duration)
+    radius = {} if dynamic_radius is None else {"dynamic_radius": dynamic_radius}
+    filt = filter_safe_candidates(cands, static_obs=static_obs, dynamic_obs=people, dynamic_vel=vel, duration=duration,
+                                  **radius)
     if filt["used_fallback"] or len(filt["safe_indices"]) < 2:
         return None
 

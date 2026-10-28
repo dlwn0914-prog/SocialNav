@@ -162,7 +162,7 @@ def build_sessions(args, rng):
                 print(f"{name}: skipped (no full ego future)")
                 continue
             loaded = load_scenario_feats(path, args.candidates, args.moving_people, return_candidates=True,
-                                         social=args.social)
+                                         social=args.social, dynamic_radius=args.safety_radius)
             if loaded is None:
                 print(f"{name}: skipped (fallback or <2 safe candidates)")
                 continue
@@ -212,6 +212,8 @@ def main():
     p.add_argument("--answer", choices=["ade", "shape"], default="ade",
                    help="gc-ego: distance to the real path the answers come from")
     p.add_argument("--social", action="store_true", help="real track: + 3 social interaction features")
+    p.add_argument("--safety-radius", type=float, default=None,
+                   help="real track: safety-filter radius around people [m] (default: PRIEST's 0.68)")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", default=None)
     args = p.parse_args()
