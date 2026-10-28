@@ -24,6 +24,19 @@ Protocol (identical for every method):
   - Pairing: within a session every method sees the same pool and theta*,
     so method differences are reported as paired differences vs ActiveQuery
     with 95% bootstrap CIs.
+  - --user gc-ego (real track, Grand Central scenes): instead of a sampled
+    theta*, the user is the pedestrian the robot replaced
+    (utils/gc_ego_future.py). Their utility for a candidate is
+    -beta * ADE(candidate, the path they actually walked), so answers come
+    from real walking behaviour and need not be linear in our features.
+    Regret is normalized the same way; cosine is undefined (reported nan);
+    final_ade_m is the chosen candidate's ADE to the real path.
+    --answer shape swaps time-aligned ADE for a speed-free path distance:
+    both paths resampled by arc length over their common length, then the
+    mean pointwise distance -- so a candidate is not preferred merely for
+    moving at the pedestrian's speed.
+  - --social adds min_dist_moving, passing_side, intrusion_time_s to the 3
+    real-track features (needs --moving-people scene files).
   - --estimator: "native" lets each strategy recommend from its own
     estimator (norm-constrained MLE for ActiveQuery/Random/Fisher/DPB,
     Laplace MAP for MaxInP/TS/EUBO). "mle" / "map" refit ONE shared
@@ -91,8 +104,7 @@ def shared_estimate(history, dim, estimator):
     return laplace_posterior(np.array(history), dim)[0]
 
 
-def run_session(strategy, feats, theta_star, rng, n_queries, estimator="native"):
-    u = feats @ theta_star
+def run_session(strategy, feats, u, theta_star, rng, n_queries, estimator="native", ade=None):
     u_best, u_range = u.max(), max(u.max() - u.min(), 1e-8)
     true_best = int(np.argmax(u))
     regret, top1, cos = [], [], []
@@ -112,28 +124,65 @@ def run_session(strategy, feats, theta_star, rng, n_queries, estimator="native")
         rec = int(np.argmax(feats @ theta)) if theta is not None else strategy.best(feats)
         regret.append(float((u_best - u[rec]) / u_range))
         top1.append(float(rec == true_best))
-        cos.append(cosine(theta, theta_star))
-    return {"regret": regret, "top1": top1, "cos": cos, "queries_used": used}
+        cos.append(cosine(theta, theta_star) if theta_star is not None else float("nan"))
+    out = {"regret": regret, "top1": top1, "cos": cos, "queries_used": used}
+    if ade is not None:
+        out["final_ade_m"] = float(ade[rec])
+        out["best_ade_m"] = float(ade.min())
+    return out
+
+
+def arc_resample(path, length, n=30):
+    seg = np.linalg.norm(np.diff(path, axis=0), axis=1)
+    s = np.r_[0.0, np.cumsum(seg)]
+    q = np.linspace(0.0, length, n)
+    return np.stack([np.interp(q, s, path[:, 0]), np.interp(q, s, path[:, 1])], axis=1)
+
+
+def shape_distance(cands, fut):
+    """Speed-free counterpart of ADE: mean distance between the two paths
+    resampled by arc length over min(len(candidate), len(real path))."""
+    lf = np.linalg.norm(np.diff(fut, axis=0), axis=1).sum()
+    out = []
+    for c in cands:
+        L = min(np.linalg.norm(np.diff(c, axis=0), axis=1).sum(), lf)
+        out.append(np.linalg.norm(arc_resample(c, L) - arc_resample(fut, L), axis=1).mean())
+    return np.array(out)
 
 
 def build_sessions(args, rng):
-    """Yields (pool_name, feats_norm) once per session."""
+    """Yields (pool_name, feats_norm, ade) once per session; ade (per candidate,
+    metres) only for --user gc-ego, else None."""
     if args.track == "real":
+        futures = json.load(open(args.ego_future)) if args.user == "gc-ego" else {}
         pools = []
         for path in sorted(glob.glob(os.path.join(args.scenario_dir, "scenario_*.json"))):
-            feats_raw = load_scenario_feats(path, args.candidates, args.moving_people)
-            if feats_raw is None:
-                print(f"{os.path.basename(path)}: skipped (fallback or <2 safe candidates)")
+            name = os.path.basename(path)[len("scenario_"):-len(".json")]
+            if args.user == "gc-ego" and futures.get(name) is None:
+                print(f"{name}: skipped (no full ego future)")
                 continue
-            pools.append((os.path.basename(path)[len("scenario_"):-len(".json")], normalize(feats_raw)))
+            loaded = load_scenario_feats(path, args.candidates, args.moving_people, return_candidates=True,
+                                         social=args.social)
+            if loaded is None:
+                print(f"{name}: skipped (fallback or <2 safe candidates)")
+                continue
+            feats_raw, cands = loaded
+            ade = None
+            if args.user == "gc-ego":
+                fut = np.array(futures[name])
+                if args.answer == "shape":
+                    ade = shape_distance(cands, fut)
+                else:
+                    ade = np.linalg.norm(cands - fut[None], axis=-1).mean(axis=1)
+            pools.append((name, normalize(feats_raw), ade))
         for _ in range(args.repeats):
-            for name, feats in pools:
-                yield name, feats
+            for pool in pools:
+                yield pool
     else:
         target = np.array([0.0, 5.0])
         for s in range(args.sessions):
             cands = make_synthetic_candidates(target, num_candidates=args.k, rng=rng)
-            yield f"syn_{s}", normalize(np.array([extract_features(c, target) for c in cands]))
+            yield f"syn_{s}", normalize(np.array([extract_features(c, target) for c in cands])), None
 
 
 def bootstrap_ci(x, rng, n_boot=2000):
@@ -152,10 +201,17 @@ def main():
     p.add_argument("--n-queries", type=int, default=10)
     p.add_argument("--theta-norm", type=float, default=2.0)
     p.add_argument("--estimator", choices=["native", "mle", "map"], default="native")
+    p.add_argument("--user", choices=["linear", "gc-ego"], default="linear")
+    p.add_argument("--ego-future", default="/home/nuri2/crowd_fm_ws/scenarios_gc/ego_future.json")
+    p.add_argument("--beta", type=float, default=10.0,
+                   help="gc-ego: answer sharpness per metre of ADE difference (P = sigmoid(beta * dADE))")
     p.add_argument("--candidates", choices=["candidates", "raw_candidates"], default="candidates",
                    help="real track: PRIEST-refined or pre-refinement flow candidates")
     p.add_argument("--moving-people", action="store_true",
                    help="real track: safety filter predicts people at constant velocity")
+    p.add_argument("--answer", choices=["ade", "shape"], default="ade",
+                   help="gc-ego: distance to the real path the answers come from")
+    p.add_argument("--social", action="store_true", help="real track: + 3 social interaction features")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", default=None)
     args = p.parse_args()
@@ -164,13 +220,17 @@ def main():
     raw = {m: [] for m in METHODS}
     pools_seen = []
     t0 = time.time()
-    for s, (pool_name, feats) in enumerate(build_sessions(args, rng)):
-        theta_star = sample_theta(feats.shape[1], args.theta_norm, rng)
+    for s, (pool_name, feats, ade) in enumerate(build_sessions(args, rng)):
+        if ade is None:
+            theta_star = sample_theta(feats.shape[1], args.theta_norm, rng)
+            u = feats @ theta_star
+        else:
+            theta_star, u = None, -args.beta * ade
         session_seed = int(rng.integers(2**31))
         for m, make in METHODS.items():
             # same seed per method -> same feedback-noise stream where queries coincide
             srng = np.random.default_rng(session_seed)
-            raw[m].append(run_session(make(srng), feats, theta_star, srng, args.n_queries, args.estimator))
+            raw[m].append(run_session(make(srng), feats, u, theta_star, srng, args.n_queries, args.estimator, ade))
         pools_seen.append({"pool": pool_name, "K": int(feats.shape[0]), "dim": int(feats.shape[1])})
         if (s + 1) % 20 == 0:
             print(f"  {s + 1} sessions done ({time.time() - t0:.0f}s)", flush=True)
@@ -195,12 +255,19 @@ def main():
             "final_regret": [r_mean, r_lo, r_hi],
             "final_regret_diff_vs_ref": [d_mean, d_lo, d_hi],
             "final_top1": float(top1[:, -1].mean()),
-            "final_cos": float(cos[:, -1].mean()),
+            "final_cos": float(np.nanmean(cos[:, -1])) if not np.all(np.isnan(cos[:, -1])) else None,
             "mean_queries_used": float(np.mean([r["queries_used"] for r in raw[m]])),
         }
-        print(f"{m:>16} {r_mean:>8.3f} [{r_lo:.3f},{r_hi:.3f}]   {top1[:, -1].mean():>8.3f} {cos[:, -1].mean():>7.3f}"
+        if "final_ade_m" in raw[m][0]:
+            summary[m]["final_ade_m"] = float(np.mean([r["final_ade_m"] for r in raw[m]]))
+            summary[m]["best_ade_m"] = float(np.mean([r["best_ade_m"] for r in raw[m]]))
+        print(f"{m:>16} {r_mean:>8.3f} [{r_lo:.3f},{r_hi:.3f}]   {top1[:, -1].mean():>8.3f} {summary[m]['final_cos'] or float('nan'):>7.3f}"
               f" {d_mean:>+14.3f} [{d_lo:+.3f},{d_hi:+.3f}]   {summary[m]['mean_queries_used']:>7.2f}")
 
+    if "final_ade_m" in summary[REFERENCE]:
+        print("\nADE of the chosen candidate to the real walked path (m), vs best available:")
+        for m in METHODS:
+            print(f"  {m:>16}: {summary[m]['final_ade_m']:.3f}  (best {summary[m]['best_ade_m']:.3f})")
     print("\nmean normalized simple regret per query (t=1..N):")
     for m in METHODS:
         print(f"  {m:>16}: " + " ".join(f"{v:.3f}" for v in summary[m]["regret_per_query"]))

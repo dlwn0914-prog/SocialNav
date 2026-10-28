@@ -1,0 +1,111 @@
+{
+ "args": {
+  "scene_dir": "/home/nuri2/crowd_fm_ws/scenarios_v2/gc",
+  "ego_future": "/home/nuri2/crowd_fm_ws/scenarios_gc/ego_future_all.json",
+  "candidates": "raw_candidates",
+  "n_dirs": 20000,
+  "seed": 0,
+  "out": null
+ },
+ "n_scenes": 32,
+ "random_top1": 0.08055098684210527,
+ "sets": {
+  "base3 (current)": {
+   "d": 3,
+   "features": [
+    "total_turn_angle_deg",
+    "target_alignment_cos",
+    "min_dist_static"
+   ],
+   "personal_top1": 0.59375,
+   "personal_regret": 0.04806687197288775,
+   "population_top1": 0.1875,
+   "population_regret": 0.2788696894788826,
+   "population_direction": [
+    -0.1249421717995941,
+    0.9231313137867051,
+    -0.36361797427029485
+   ]
+  },
+  "base2 + min_dist_moving": {
+   "d": 3,
+   "features": [
+    "total_turn_angle_deg",
+    "target_alignment_cos",
+    "min_dist_moving"
+   ],
+   "personal_top1": 0.71875,
+   "personal_regret": 0.06092944129986906,
+   "population_top1": 0.1875,
+   "population_regret": 0.3087277388708191,
+   "population_direction": [
+    -0.5563012930913691,
+    -0.1562695172218473,
+    -0.8161548316907286
+   ]
+  },
+  "+ passing_side": {
+   "d": 4,
+   "features": [
+    "total_turn_angle_deg",
+    "target_alignment_cos",
+    "min_dist_moving",
+    "passing_side"
+   ],
+   "personal_top1": 0.75,
+   "personal_regret": 0.04889796317114496,
+   "population_top1": 0.25,
+   "population_regret": 0.3113605335270954,
+   "population_direction": [
+    -0.48017467358982036,
+    -0.18288248302147922,
+    -0.857533480447607,
+    0.024952157386111395
+   ]
+  },
+  "+ intrusion_time": {
+   "d": 5,
+   "features": [
+    "total_turn_angle_deg",
+    "target_alignment_cos",
+    "min_dist_moving",
+    "passing_side",
+    "intrusion_time_s"
+   ],
+   "personal_top1": 0.84375,
+   "personal_regret": 0.04297217292434232,
+   "population_top1": 0.25,
+   "population_regret": 0.3130298585673487,
+   "population_direction": [
+    -0.43987334590405197,
+    -0.1649208511356082,
+    -0.8601628251361748,
+    -0.17096485838454153,
+    -0.1010122956633936
+   ]
+  },
+  "+ progress": {
+   "d": 6,
+   "features": [
+    "total_turn_angle_deg",
+    "target_alignment_cos",
+    "min_dist_moving",
+    "passing_side",
+    "intrusion_time_s",
+    "progress_m"
+   ],
+   "personal_top1": 0.96875,
+   "personal_regret": 0.00253076682779548,
+   "population_top1": 0.4375,
+   "population_regret": 0.19838590018812263,
+   "population_direction": [
+    -0.008241774380341878,
+    0.46798070143796305,
+    -0.3819668210077876,
+    0.08437409970402919,
+    -0.3054020238966298,
+    0.7311895096244728
+   ]
+  }
+ }
+}

@@ -161,6 +161,44 @@ def agent_avoidance_feature(waypoints, agent_positions):
     return float(dists.min())
 
 
+SOCIAL_FEATURE_NAMES = ["min_dist_moving", "passing_side", "intrusion_time_s", "progress_m"]
+
+
+def social_features(waypoints, people_pos, people_vel, duration, personal_radius=1.2, side_radius=2.5):
+    """Interaction features with people predicted at constant velocity (waypoint
+    k at time t_k = k/(T-1) * duration meets person i at p_i + v_i t_k).
+
+    min_dist_moving:  closest approach to anyone over the path [m] -- the
+                      time-aware replacement for agent_avoidance_feature.
+    passing_side:     +1 if the closest-approach person (within side_radius)
+                      is on the robot's right when passed (robot passes on
+                      their left), -1 if on its left, 0 if nobody that close.
+    intrusion_time_s: time spent within personal_radius of anyone [s]; the
+                      safety filter already removes < 0.68 m, so this measures
+                      tolerance for the 0.68-1.2 m band.
+    progress_m:       straight-line distance covered over the path [m].
+    Returns a (4,) array in SOCIAL_FEATURE_NAMES order.
+    """
+    wp = np.asarray(waypoints, dtype=np.float64)
+    progress = float(np.linalg.norm(wp[-1] - wp[0]))
+    pos = np.asarray(people_pos, dtype=np.float64).reshape(-1, 2)
+    if len(pos) == 0:
+        return np.array([side_radius, 0.0, 0.0, progress])
+    vel = np.asarray(people_vel, dtype=np.float64).reshape(-1, 2)
+    t = np.linspace(0.0, duration, len(wp))
+    ppl_t = pos[None, :, :] + t[:, None, None] * vel[None, :, :]  # (T, P, 2)
+    d = np.linalg.norm(wp[:, None, :] - ppl_t, axis=-1)            # (T, P)
+    k, i = np.unravel_index(np.argmin(d), d.shape)
+    side = 0.0
+    if d[k, i] < side_radius:
+        heading = wp[min(k + 1, len(wp) - 1)] - wp[max(k - 1, 0)]
+        rel = ppl_t[k, i] - wp[k]
+        side = float(-np.sign(heading[0] * rel[1] - heading[1] * rel[0]))  # person on right -> +1
+    dt = duration / (len(wp) - 1)
+    intrusion = float((d.min(axis=1) < personal_radius).sum() * dt)
+    return np.array([float(d.min()), side, intrusion, progress])
+
+
 def normalize_features(feats, mean=None, std=None):
     """Z-score normalization so Bradley-Terry weights are comparable across
     features with very different natural scales (degrees vs. meters)."""

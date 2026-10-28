@@ -25,7 +25,7 @@ import os
 
 import numpy as np
 
-from src.preference.features import extract_features, agent_avoidance_feature, FEATURE_NAMES
+from src.preference.features import extract_features, agent_avoidance_feature, social_features, FEATURE_NAMES
 from src.preference.bradley_terry import predict_preference_prob
 from src.preference.safety_filter import filter_safe_candidates
 from src.preference.active_query import ActiveQueryStrategy, RandomQueryStrategy
@@ -58,23 +58,28 @@ def cos_to(theta_hat, w_true_norm):
     return float(np.dot(w_true_norm, theta_hat) / (np.linalg.norm(w_true_norm) * np.linalg.norm(theta_hat)))
 
 
-def load_scenario_feats(path, candidate_key="candidates", moving_people=False):
+def load_scenario_feats(path, candidate_key="candidates", moving_people=False, return_candidates=False,
+                        social=False):
     """candidate_key: "candidates" (PRIEST-refined) or "raw_candidates" (flow
     samples before refinement, in files from the updated extractor).
     moving_people: safety-check people at constant velocity ("people_vel",
-    "traj_duration" in the file) instead of frozen at t=0."""
+    "traj_duration" in the file) instead of frozen at t=0.
+    social: append min_dist_moving, passing_side, intrusion_time_s
+    (src/preference/features.social_features; progress_m left out -- it is
+    mostly speed) to the 3 reduced features."""
     d = json.load(open(path))
     cands = [np.array(c, dtype=np.float64) for c in d[candidate_key]]
     goal = np.array(d["goal"], dtype=np.float64)
     people = np.array(d["people"], dtype=np.float64)
-    people = people[np.linalg.norm(people, axis=1) < 500]
+    real = np.linalg.norm(people, axis=1) < 500
+    people = people[real]
     static_obs = np.array(d.get("static_obstacles", []), dtype=np.float64)
     if static_obs.size:
         static_obs = static_obs[np.linalg.norm(static_obs, axis=1) > 1e-5]
 
     vel = duration = None
     if moving_people:
-        vel = np.array(d["people_vel"], dtype=np.float64).reshape(-1, 2)
+        vel = np.array(d["people_vel"], dtype=np.float64).reshape(-1, 2)[real]
         duration = float(d["traj_duration"])
     filt = filter_safe_candidates(cands, static_obs=static_obs, dynamic_obs=people, dynamic_vel=vel, duration=duration)
     if filt["used_fallback"] or len(filt["safe_indices"]) < 2:
@@ -83,6 +88,12 @@ def load_scenario_feats(path, candidate_key="candidates", moving_people=False):
     safe = [cands[i] for i in filt["safe_indices"]]
     reach = candidate_reach_scale(safe)
     feats_raw = np.array([reduced_features(c, goal, people, reach) for c in safe])
+    if social:
+        vel_s = np.array(d["people_vel"], dtype=np.float64).reshape(-1, 2)[real]
+        soc = np.array([social_features(c, people, vel_s, float(d["traj_duration"]))[:3] for c in safe])
+        feats_raw = np.hstack([feats_raw, soc])
+    if return_candidates:
+        return feats_raw, np.array(safe)
     return feats_raw
 
 

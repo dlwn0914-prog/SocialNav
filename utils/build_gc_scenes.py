@@ -45,22 +45,33 @@ GOAL_DIST = 8.0
 BINS = {"2-3": (2, 3), "4-6": (4, 6), "7-10": (7, 10)}
 
 
+def read_track(path):
+    """One Annotation/<id>.txt -> (frames (n,), world positions (n, 2))."""
+    a = np.array(open(path).read().split(), dtype=np.float64).reshape(-1, 3)
+    p = np.c_[a[:, 1], a[:, 0], np.ones(len(a))] @ H.T
+    return a[:, 2].astype(int), p[:, :2] / p[:, 2:] * 0.8
+
+
+def velocity_at(frames, w, k):
+    """Central/one-sided difference at annotation k, only across consecutive
+    annotations (gap of 20 frames); None if k has no consecutive neighbour."""
+    nb = [m for m in (k - 1, k + 1) if 0 <= m < len(frames) and abs(frames[m] - frames[k]) == 20]
+    if not nb:
+        return None
+    lo, hi = min(nb + [k]), max(nb + [k])
+    return (w[hi] - w[lo]) / ((frames[hi] - frames[lo]) / FPS)
+
+
 def load_tracks(annot_dir):
     """Returns {frame: [(ped_id, x, y, vx, vy), ...]} in world metres."""
     by_frame = defaultdict(list)
     for path in sorted(glob.glob(os.path.join(annot_dir, "*.txt"))):
-        a = np.array(open(path).read().split(), dtype=np.float64).reshape(-1, 3)
-        p = np.c_[a[:, 1], a[:, 0], np.ones(len(a))] @ H.T
-        w = p[:, :2] / p[:, 2:] * 0.8
-        frames = a[:, 2].astype(int)
+        frames, w = read_track(path)
         pid = int(os.path.basename(path)[:-4])
-        for k in range(len(a)):
-            # central/one-sided difference, only across consecutive annotations (gap of 20 frames)
-            nb = [m for m in (k - 1, k + 1) if 0 <= m < len(a) and abs(frames[m] - frames[k]) == 20]
-            if not nb:
+        for k in range(len(frames)):
+            v = velocity_at(frames, w, k)
+            if v is None:
                 continue
-            lo, hi = min(nb + [k]), max(nb + [k])
-            v = (w[hi] - w[lo]) / ((frames[hi] - frames[lo]) / FPS)
             by_frame[frames[k]].append((pid, w[k, 0], w[k, 1], v[0], v[1]))
     return by_frame
 
@@ -87,6 +98,9 @@ def main():
     p.add_argument("--min-ego-speed", type=float, default=0.5)
     p.add_argument("--min-frame-gap", type=int, default=500, help="frames between chosen scenes (20 s), for diversity")
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--exclude-dir", action="append", default=[],
+                   help="scene dir(s) whose frames (+- --min-frame-gap) must not be reused")
+    p.add_argument("--prefix", default="gc_", help="scene name prefix; keep unique across batches")
     args = p.parse_args()
 
     rng = np.random.default_rng(args.seed)
@@ -95,7 +109,8 @@ def main():
     os.makedirs(args.out_dir, exist_ok=True)
 
     chosen = {b: [] for b in BINS}
-    used_frames = []
+    used_frames = [json.load(open(f))["source"]["frame"]
+                   for d in args.exclude_dir for f in glob.glob(os.path.join(d, "*.json"))]
     for f in rng.permutation(frames):
         if all(len(v) >= args.per_bin for v in chosen.values()):
             break
@@ -116,7 +131,7 @@ def main():
     static = (20.0 * np.stack([np.cos(ring), np.sin(ring)], axis=1)).tolist()
     for b, scenes in chosen.items():
         for k, (f, ego_id, people) in enumerate(scenes):
-            name = f"gc_{b.replace('-', 'to')}_{k:02d}"
+            name = f"{args.prefix}{b.replace('-', 'to')}_{k:02d}"
             with open(os.path.join(args.out_dir, f"{name}.json"), "w") as fh:
                 json.dump({"source": {"dataset": "GrandCentral/OpenTraj", "frame": f, "ego_ped_id": ego_id},
                            "goal": [GOAL_DIST, 0.0],

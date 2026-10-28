@@ -1,0 +1,86 @@
+{
+ "hand/raw_candidates/frozen": {
+  "n_scenes": 12,
+  "usable": 7,
+  "mean_safe": 6.416666666666667,
+  "mean_gap": 0.3163236491289201,
+  "mean_lateral": 0.31510069156398196
+ },
+ "hand/raw_candidates/moving": {
+  "n_scenes": 12,
+  "usable": 7,
+  "mean_safe": 7.333333333333333,
+  "mean_gap": 0.3191330902783581,
+  "mean_lateral": 0.3197706635775311
+ },
+ "hand/candidates/frozen": {
+  "n_scenes": 12,
+  "usable": 6,
+  "mean_safe": 6.583333333333333,
+  "mean_gap": 0.13500548879856658,
+  "mean_lateral": 7.271018842569532e-09
+ },
+ "hand/candidates/moving": {
+  "n_scenes": 12,
+  "usable": 7,
+  "mean_safe": 8.916666666666666,
+  "mean_gap": 0.16117937405503438,
+  "mean_lateral": 3.851740379027088e-09
+ },
+ "more/raw_candidates/frozen": {
+  "n_scenes": 40,
+  "usable": 11,
+  "mean_safe": 3.925,
+  "mean_gap": 0.31052822866512203,
+  "mean_lateral": 0.39034538392231544
+ },
+ "more/raw_candidates/moving": {
+  "n_scenes": 40,
+  "usable": 14,
+  "mean_safe": 4.075,
+  "mean_gap": 0.3089061368429933,
+  "mean_lateral": 0.3443004534679598
+ },
+ "more/candidates/frozen": {
+  "n_scenes": 40,
+  "usable": 16,
+  "mean_safe": 6.2,
+  "mean_gap": 0.11651965251207042,
+  "mean_lateral": 2.8125427403713488e-09
+ },
+ "more/candidates/moving": {
+  "n_scenes": 40,
+  "usable": 13,
+  "mean_safe": 5.05,
+  "mean_gap": 0.14859427105701037,
+  "mean_lateral": 3.042661861779167e-09
+ },
+ "gc/raw_candidates/frozen": {
+  "n_scenes": 45,
+  "usable": 23,
+  "mean_safe": 7.7555555555555555,
+  "mean_gap": 0.3712133403186183,
+  "mean_lateral": 0.4064000133101059
+ },
+ "gc/raw_candidates/moving": {
+  "n_scenes": 45,
+  "usable": 33,
+  "mean_safe": 13.155555555555555,
+  "mean_gap": 0.3465956559674696,
+  "mean_lateral": 0.4338576951431054
+ },
+ "gc/candidates/frozen": {
+  "n_scenes": 45,
+  "usable": 15,
+  "mean_safe": 6.177777777777778,
+  "mean_gap": 0.17793062441175017,
+  "mean_lateral": 5.1589030714005444e-09
+ },
+ "gc/candidates/moving": {
+  "n_scenes": 45,
+  "usable": 30,
+  "mean_safe": 12.822222222222223,
+  "mean_gap": 0.17840480361649388,
+  "mean_lateral": 5.320623931252359e-09
+ }
+}
