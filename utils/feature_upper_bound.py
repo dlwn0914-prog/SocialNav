@@ -37,6 +37,7 @@ import numpy as np
 from src.preference.features import extract_features, social_features, FEATURE_NAMES
 from src.preference.safety_filter import filter_safe_candidates
 from utils.fisher_optimal_on_real_candidates import candidate_reach_scale
+from utils.unified_query_benchmark import shape_distance
 from src.preference.features import agent_avoidance_feature
 
 BASE = ["total_turn_angle_deg", "target_alignment_cos"]
@@ -46,6 +47,7 @@ FEATURE_SETS = [
     ("+ passing_side", BASE + ["min_dist_moving", "passing_side"]),
     ("+ intrusion_time", BASE + ["min_dist_moving", "passing_side", "intrusion_time_s"]),
     ("+ progress", BASE + ["min_dist_moving", "passing_side", "intrusion_time_s", "progress_m"]),
+    ("base3 + social3 (= --social)", BASE + ["min_dist_static", "min_dist_moving", "passing_side", "intrusion_time_s"]),
 ]
 
 
@@ -59,7 +61,7 @@ def all_features(c, d, people, vel, reach):
     return f
 
 
-def load_scenes(scene_dir, futures, key):
+def load_scenes(scene_dir, futures, key, answer="ade"):
     scenes = []
     for path in sorted(glob.glob(os.path.join(scene_dir, "scenario_gc_*.json"))):
         name = os.path.basename(path)[len("scenario_"):-len(".json")]
@@ -76,7 +78,8 @@ def load_scenes(scene_dir, futures, key):
             continue
         safe = cands[f["safe_indices"]]
         reach = candidate_reach_scale(list(safe))
-        ade = np.linalg.norm(safe - np.array(futures[name])[None], axis=-1).mean(axis=1)
+        fut = np.array(futures[name])
+        ade = shape_distance(safe, fut) if answer == "shape" else np.linalg.norm(safe - fut[None], axis=-1).mean(axis=1)
         scenes.append({"name": name, "feats": [all_features(c, d, people, vel, reach) for c in safe], "ade": ade})
     return scenes
 
@@ -95,11 +98,13 @@ def main():
     p.add_argument("--n-dirs", type=int, default=20000)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--cv-folds", type=int, default=5)
+    p.add_argument("--answer", choices=["ade", "shape"], default="ade",
+                   help="distance to the real path that defines the answer (as in the benchmark)")
     p.add_argument("--out", default=None)
     args = p.parse_args()
 
     rng = np.random.default_rng(args.seed)
-    scenes = load_scenes(args.scene_dir, json.load(open(args.ego_future)), args.candidates)
+    scenes = load_scenes(args.scene_dir, json.load(open(args.ego_future)), args.candidates, args.answer)
     print(f"{len(scenes)} usable scenes ({args.candidates}, moving-people safety filter)")
     rand_top1 = np.mean([1 / len(s["ade"]) for s in scenes])
     print(f"random pick: top-1 {rand_top1:.3f}\n")
@@ -137,7 +142,7 @@ def main():
         print(f"{label:>26} {len(names):>2} {row['personal_top1']:>14.3f} {row['personal_regret']:>7.3f}"
               f" {row['population_top1']:>16.3f} {row['population_regret']:>7.3f}"
               f" {row['population_cv_top1']:>12.3f} {row['population_cv_regret']:>7.3f}")
-    out = args.out or f"results/feature_upper_bound_{args.candidates}.json"
+    out = args.out or f"results/feature_upper_bound_{args.candidates}{'_shape' if args.answer == 'shape' else ''}.json"
     with open(out, "w") as f:
         json.dump({"args": vars(args), "n_scenes": len(scenes), "random_top1": rand_top1, "sets": report}, f, indent=1)
     print(f"\nsaved {out}")
