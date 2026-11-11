@@ -34,7 +34,7 @@ import os
 
 import numpy as np
 
-from src.preference.features import extract_features, social_features, FEATURE_NAMES
+from src.preference.features import extract_features, social_features, social_features_v2, FEATURE_NAMES
 from src.preference.safety_filter import filter_safe_candidates
 from utils.fisher_optimal_on_real_candidates import candidate_reach_scale
 from utils.unified_query_benchmark import shape_distance
@@ -48,6 +48,8 @@ FEATURE_SETS = [
     ("+ intrusion_time", BASE + ["min_dist_moving", "passing_side", "intrusion_time_s"]),
     ("+ progress", BASE + ["min_dist_moving", "passing_side", "intrusion_time_s", "progress_m"]),
     ("base3 + social3 (= --social)", BASE + ["min_dist_static", "min_dist_moving", "passing_side", "intrusion_time_s"]),
+    ("fixed6 (start dropped)", BASE + ["min_dist_static", "min_dist_moving_fix", "passing_side_fix", "intrusion_time_fix"]),
+    ("draft5", BASE + ["min_dist_moving_fix", "passing_side_soft", "intrusion_depth"]),
 ]
 
 
@@ -58,6 +60,10 @@ def all_features(c, d, people, vel, reach):
     f = {n: base[FEATURE_NAMES.index(n)] for n in BASE}
     f["min_dist_static"] = min(dist, reach) if np.isfinite(dist) else reach
     f.update(dict(zip(["min_dist_moving", "passing_side", "intrusion_time_s", "progress_m"], soc)))
+    fix = social_features(c, people, vel, d["traj_duration"], skip_start=True)
+    f.update(dict(zip(["min_dist_moving_fix", "passing_side_fix", "intrusion_time_fix"], fix[:3])))
+    f.update(dict(zip(["_v2_min_dist", "passing_side_soft", "intrusion_depth"],
+                      social_features_v2(c, people, vel, d["traj_duration"]))))
     return f
 
 

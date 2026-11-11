@@ -37,6 +37,10 @@ Protocol (identical for every method):
     moving at the pedestrian's speed.
   - --social adds min_dist_moving, passing_side, intrusion_time_s to the 3
     real-track features (needs --moving-people scene files).
+  - --features overrides --social: base3 | social6 (= --social) | fixed6
+    (social6 without the shared start waypoint) | draft5 (turn, alignment,
+    min_dist_moving, passing_side_soft, intrusion_depth; see
+    src/preference/features.social_features_v2).
   - --estimator: "native" lets each strategy recommend from its own
     estimator (norm-constrained MLE for ActiveQuery/Random/Fisher/DPB,
     Laplace MAP for MaxInP/TS/EUBO). "mle" / "map" refit ONE shared
@@ -162,7 +166,8 @@ def build_sessions(args, rng):
                 print(f"{name}: skipped (no full ego future)")
                 continue
             loaded = load_scenario_feats(path, args.candidates, args.moving_people, return_candidates=True,
-                                         social=args.social, dynamic_radius=args.safety_radius)
+                                         social=args.social, dynamic_radius=args.safety_radius,
+                                         feature_set=args.features)
             if loaded is None:
                 print(f"{name}: skipped (fallback or <2 safe candidates)")
                 continue
@@ -212,6 +217,8 @@ def main():
     p.add_argument("--answer", choices=["ade", "shape"], default="ade",
                    help="gc-ego: distance to the real path the answers come from")
     p.add_argument("--social", action="store_true", help="real track: + 3 social interaction features")
+    p.add_argument("--features", choices=["base3", "social6", "fixed6", "draft5"], default=None,
+                   help="real track: feature set (overrides --social)")
     p.add_argument("--safety-radius", type=float, default=None,
                    help="real track: safety-filter radius around people [m] (default: PRIEST's 0.68)")
     p.add_argument("--seed", type=int, default=0)

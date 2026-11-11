@@ -164,7 +164,8 @@ def agent_avoidance_feature(waypoints, agent_positions):
 SOCIAL_FEATURE_NAMES = ["min_dist_moving", "passing_side", "intrusion_time_s", "progress_m"]
 
 
-def social_features(waypoints, people_pos, people_vel, duration, personal_radius=1.2, side_radius=2.5):
+def social_features(waypoints, people_pos, people_vel, duration, personal_radius=1.2, side_radius=2.5,
+                    skip_start=False):
     """Interaction features with people predicted at constant velocity (waypoint
     k at time t_k = k/(T-1) * duration meets person i at p_i + v_i t_k).
 
@@ -177,6 +178,9 @@ def social_features(waypoints, people_pos, people_vel, duration, personal_radius
                       safety filter already removes < 0.68 m, so this measures
                       tolerance for the 0.68-1.2 m band.
     progress_m:       straight-line distance covered over the path [m].
+    skip_start:       leave out waypoint 0, the start shared by every candidate
+                      (see social_features_v2); False keeps the original
+                      behaviour behind the 10/28 results.
     Returns a (4,) array in SOCIAL_FEATURE_NAMES order.
     """
     wp = np.asarray(waypoints, dtype=np.float64)
@@ -188,6 +192,8 @@ def social_features(waypoints, people_pos, people_vel, duration, personal_radius
     t = np.linspace(0.0, duration, len(wp))
     ppl_t = pos[None, :, :] + t[:, None, None] * vel[None, :, :]  # (T, P, 2)
     d = np.linalg.norm(wp[:, None, :] - ppl_t, axis=-1)            # (T, P)
+    if skip_start:
+        d[0] = np.inf
     k, i = np.unravel_index(np.argmin(d), d.shape)
     side = 0.0
     if d[k, i] < side_radius:
@@ -197,6 +203,50 @@ def social_features(waypoints, people_pos, people_vel, duration, personal_radius
     dt = duration / (len(wp) - 1)
     intrusion = float((d.min(axis=1) < personal_radius).sum() * dt)
     return np.array([float(d.min()), side, intrusion, progress])
+
+
+DRAFT_SOCIAL_NAMES = ["min_dist_moving", "passing_side_soft", "intrusion_depth"]
+
+
+def social_features_v2(waypoints, people_pos, people_vel, duration, personal_radius=1.2, side_radius=2.5):
+    """Draft feature set (11/3), same constant-velocity people as social_features but
+    following the selection criteria: only what the robot can change, continuous.
+
+    Waypoint 0 is the shared start (0, 0) for every candidate, so it is left out
+    everywhere -- social_features includes it, and in ~38% of v3 GC scenes the
+    closest approach happens at t=0, making min_dist_moving identical for all
+    candidates.
+
+    min_dist_moving:   closest approach to anyone over waypoints 1..T-1 [m].
+    passing_side_soft: sum over people of sin(bearing of the person at their
+                       closest approach; + = on the robot's right) weighted by
+                       max(0, 1 - d_i / side_radius). Continuous version of
+                       passing_side; 0 when nobody comes within side_radius.
+    intrusion_depth:   integral over time of sum_i max(0, personal_radius - d_i)
+                       [m*s]; continuous version of intrusion_time_s.
+    Returns a (3,) array in DRAFT_SOCIAL_NAMES order.
+    """
+    wp = np.asarray(waypoints, dtype=np.float64)
+    pos = np.asarray(people_pos, dtype=np.float64).reshape(-1, 2)
+    if len(pos) == 0:
+        return np.array([side_radius, 0.0, 0.0])
+    vel = np.asarray(people_vel, dtype=np.float64).reshape(-1, 2)
+    t = np.linspace(0.0, duration, len(wp))
+    ppl_t = pos[None, :, :] + t[:, None, None] * vel[None, :, :]  # (T, P, 2)
+    d = np.linalg.norm(wp[:, None, :] - ppl_t, axis=-1)[1:]        # (T-1, P), start dropped
+    side = 0.0
+    for i in range(d.shape[1]):
+        k = int(np.argmin(d[:, i])) + 1
+        heading = wp[min(k + 1, len(wp) - 1)] - wp[k - 1]
+        rel = ppl_t[k, i] - wp[k]
+        hn, rn = np.linalg.norm(heading), np.linalg.norm(rel)
+        if hn < 1e-8 or rn < 1e-8:
+            continue
+        sin_b = -(heading[0] * rel[1] - heading[1] * rel[0]) / (hn * rn)  # person on right -> +
+        side += sin_b * max(0.0, 1.0 - d[k - 1, i] / side_radius)
+    dt = duration / (len(wp) - 1)
+    depth = float(np.clip(personal_radius - d, 0.0, None).sum() * dt)
+    return np.array([float(d.min()), side, depth])
 
 
 def normalize_features(feats, mean=None, std=None):

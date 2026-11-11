@@ -25,7 +25,7 @@ import os
 
 import numpy as np
 
-from src.preference.features import extract_features, agent_avoidance_feature, social_features, FEATURE_NAMES
+from src.preference.features import extract_features, agent_avoidance_feature, social_features, social_features_v2, FEATURE_NAMES
 from src.preference.bradley_terry import predict_preference_prob
 from src.preference.safety_filter import filter_safe_candidates
 from src.preference.active_query import ActiveQueryStrategy, RandomQueryStrategy
@@ -59,7 +59,7 @@ def cos_to(theta_hat, w_true_norm):
 
 
 def load_scenario_feats(path, candidate_key="candidates", moving_people=False, return_candidates=False,
-                        social=False, dynamic_radius=None):
+                        social=False, dynamic_radius=None, feature_set=None):
     """candidate_key: "candidates" (PRIEST-refined) or "raw_candidates" (flow
     samples before refinement, in files from the updated extractor).
     moving_people: safety-check people at constant velocity ("people_vel",
@@ -68,7 +68,12 @@ def load_scenario_feats(path, candidate_key="candidates", moving_people=False, r
     (src/preference/features.social_features; progress_m left out -- it is
     mostly speed) to the 3 reduced features.
     dynamic_radius: safety-filter radius around people [m]; None = the
-    filter's default (PRIEST's 0.68)."""
+    filter's default (PRIEST's 0.68).
+    feature_set: overrides `social` when given --
+      "base3"   the 3 reduced features
+      "social6" base3 + min_dist_moving, passing_side, intrusion_time_s (= social=True)
+      "fixed6"  social6 with waypoint 0 (shared start) left out of the social terms
+      "draft5"  turn, alignment + social_features_v2 (min_dist_static dropped)"""
     d = json.load(open(path))
     cands = [np.array(c, dtype=np.float64) for c in d[candidate_key]]
     goal = np.array(d["goal"], dtype=np.float64)
@@ -92,10 +97,18 @@ def load_scenario_feats(path, candidate_key="candidates", moving_people=False, r
     safe = [cands[i] for i in filt["safe_indices"]]
     reach = candidate_reach_scale(safe)
     feats_raw = np.array([reduced_features(c, goal, people, reach) for c in safe])
-    if social:
+    if feature_set is None:
+        feature_set = "social6" if social else "base3"
+    if feature_set != "base3":
         vel_s = np.array(d["people_vel"], dtype=np.float64).reshape(-1, 2)[real]
-        soc = np.array([social_features(c, people, vel_s, float(d["traj_duration"]))[:3] for c in safe])
-        feats_raw = np.hstack([feats_raw, soc])
+        dur = float(d["traj_duration"])
+        if feature_set == "draft5":
+            soc = np.array([social_features_v2(c, people, vel_s, dur) for c in safe])
+            feats_raw = np.hstack([feats_raw[:, :2], soc])
+        else:
+            soc = np.array([social_features(c, people, vel_s, dur, skip_start=feature_set == "fixed6")[:3]
+                            for c in safe])
+            feats_raw = np.hstack([feats_raw, soc])
     if return_candidates:
         return feats_raw, np.array(safe)
     return feats_raw
