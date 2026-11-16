@@ -1,0 +1,26 @@
+% Main result: held-out pairwise agreement after 5 queries (20 in grey).
+% Synthetic users (200 per setting), 95% bootstrap CI over users.
+% GC: dest >= 12 s, 12,159 test situations; ETH/UCY: dest >= 8 s, 590 test situations.
+% Sources: results/codebook/style/gc_{gauss,sparse}.json, results/codebook/dest8/eth_{gauss,sparse}.json
+\begin{table}[t]
+\centering
+\caption{Held-out pairwise agreement with the user's preference after 5 queries (20 queries in parentheses). Synthetic users, 95\% bootstrap CI over 200 users.}
+\label{tab:main}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lcccc}
+\toprule
+ & \multicolumn{2}{c}{Grand Central} & \multicolumn{2}{c}{ETH/UCY} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Method & dense $\theta^*$ & sparse $\theta^*$ & dense $\theta^*$ & sparse $\theta^*$ \\
+\midrule
+Human prior only    & 0.535 & 0.522 & 0.536 & 0.527 \\
+Random queries      & 0.789 \scriptsize{(0.902)} & 0.760 \scriptsize{(0.874)} & 0.816 \scriptsize{(0.903)} & 0.780 \scriptsize{(0.872)} \\
+Active query (AQ)   & 0.816 \scriptsize{(0.898)} & 0.793 \scriptsize{(0.876)} & 0.824 \scriptsize{(0.908)} & 0.801 \scriptsize{(0.885)} \\
+EUBO (ours)         & \textbf{0.828} \scriptsize{(0.911)} & \textbf{0.809} \scriptsize{(0.892)} & \textbf{0.842} \scriptsize{(0.920)} & \textbf{0.824} \scriptsize{(0.881)} \\
+\midrule
+EUBO $-$ AQ         & +0.012 \scriptsize{[$-$.002, .028]} & +0.016$^\dagger$ \scriptsize{[.001, .032]} & +0.019$^\dagger$ \scriptsize{[.005, .034]} & +0.023$^\dagger$ \scriptsize{[.008, .038]} \\
+EUBO $-$ Random     & +0.039$^\dagger$ \scriptsize{[.021, .058]} & +0.049$^\dagger$ \scriptsize{[.031, .067]} & +0.026$^\dagger$ \scriptsize{[.007, .046]} & +0.044$^\dagger$ \scriptsize{[.027, .063]} \\
+\bottomrule
+\end{tabular}
+\\[2pt]{\scriptsize $^\dagger$ 95\% CI of the paired difference excludes 0.}
+\end{table}

@@ -1,0 +1,24 @@
+% Appendix: ETH/UCY with destination >= 12 s (as GC) vs >= 8 s (main text).
+% Sources: results/codebook/style/eth_{gauss,sparse}.json (12 s), results/codebook/dest8/eth_{gauss,sparse}.json (8 s)
+\begin{table}[h]
+\centering
+\caption{ETH/UCY with the destination at least 12\,s ahead (the Grand Central setting; 48 test pedestrians, 281 situations) and at least 8\,s ahead (main text; 88 pedestrians, 590 situations). Held-out pairwise agreement after 5 queries (20 in parentheses); paired differences after 5 queries with 95\% bootstrap CI over 200 synthetic users.}
+\label{tab:eth_dest}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lcccc}
+\toprule
+ & \multicolumn{2}{c}{dense $\theta^*$} & \multicolumn{2}{c}{sparse $\theta^*$} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Method & $\geq$12\,s & $\geq$8\,s & $\geq$12\,s & $\geq$8\,s \\
+\midrule
+Human prior only  & 0.532 & 0.536 & 0.529 & 0.527 \\
+Random queries    & 0.800 \scriptsize{(0.902)} & 0.816 \scriptsize{(0.903)} & 0.786 \scriptsize{(0.877)} & 0.780 \scriptsize{(0.872)} \\
+Active query (AQ) & 0.822 \scriptsize{(0.911)} & 0.824 \scriptsize{(0.908)} & 0.789 \scriptsize{(0.874)} & 0.801 \scriptsize{(0.885)} \\
+EUBO (ours)       & \textbf{0.850} \scriptsize{(0.915)} & \textbf{0.842} \scriptsize{(0.920)} & \textbf{0.822} \scriptsize{(0.886)} & \textbf{0.824} \scriptsize{(0.881)} \\
+\midrule
+EUBO $-$ AQ       & +0.028$^\dagger$ \scriptsize{[.012, .044]} & +0.019$^\dagger$ \scriptsize{[.005, .034]} & +0.033$^\dagger$ \scriptsize{[.017, .050]} & +0.023$^\dagger$ \scriptsize{[.008, .038]} \\
+EUBO $-$ Random   & +0.050$^\dagger$ \scriptsize{[.031, .069]} & +0.026$^\dagger$ \scriptsize{[.007, .046]} & +0.036$^\dagger$ \scriptsize{[.016, .055]} & +0.044$^\dagger$ \scriptsize{[.027, .063]} \\
+\bottomrule
+\end{tabular}
+\\[2pt]{\scriptsize $^\dagger$ 95\% CI of the paired difference excludes 0.}
+\end{table}
