@@ -1,0 +1,16 @@
+<section id="setup" class="pn">
+<div class="head">
+<p class="eyebrow">실험 설정</p>
+<h2>실제 보행 장면 + 합성 사용자</h2>
+</div>
+<div class="cards c3">
+<div class="card"><p class="tag">장면</p><h3>Grand Central</h3><p class="txt">충돌 예상 16,209개 (테스트 구간, 목적지 ≥ 12초)</p></div>
+<div class="card"><p class="tag">장면</p><h3>ETH/UCY</h3><p class="txt">충돌 예상 590개 (목적지 ≥ 8초, 안전 후보 ≥ 4개)</p></div>
+<div class="card"><p class="tag">충돌 장면이란</p><h3>예측 충돌</h3><p class="txt">로봇 직진, 사람 등속일 때 8초 안에 1 m 이내</p></div>
+</div>
+<div class="cards c2">
+<div class="card"><p class="tag">합성 사용자 200명</p><p class="txt"><b>dense</b>: θ ~ N(0, I), 모든 축을 조금씩<br><b>sparse</b>: 한두 축만 크게 (Dirichlet 0.3)<br>답: P(A) = σ(5 · (u(A) − u(B)))</p></div>
+<div class="card"><p class="tag">평가</p><p class="txt">질문 장면 10개에서 최대 20문항 → 처음 보는 테스트 장면 20개에서 A/B 선택 일치율</p></div>
+</div>
+<aside>GC는 테스트 구간 34,734개 중 목적지가 12초 이상 남은 26,281개, 그중 충돌 예상 62%. ETH/UCY는 목적지 8초 이상 1,249개 중 충돌 예상 1,141개, 안전 후보가 4개 이상인 590개. dense와 sparse는 사용자 유형 두 가지이고, 실제 사람이 어느 쪽에 가까운지 모르므로 둘 다 보고합니다.</aside>
+</section>

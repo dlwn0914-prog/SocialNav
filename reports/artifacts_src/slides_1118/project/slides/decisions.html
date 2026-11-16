@@ -1,0 +1,15 @@
+<section id="decisions" class="pn alt">
+<div class="head">
+<p class="eyebrow">지난 미팅 이후 정한 방향</p>
+<h2>안전은 거르고, 선호는 스타일만 배운다</h2>
+</div>
+<table class="data">
+<tr><th style="width:26%">항목</th><th style="width:37%">이전</th><th style="width:37%">지금</th></tr>
+<tr><td>안전</td><td>선호 모델의 특징 중 하나</td><td>후보를 거르는 필터 (사람과 최소 거리, 진행)</td></tr>
+<tr><td>선호 특징</td><td>안전·효율 섞인 6개</td><td>방향성 없는 스타일 5개: 지나가는 쪽, 앞/뒤, 양보, 우회 폭, 사람다움</td></tr>
+<tr><td>경로 후보</td><td>사전학습 정책 샘플</td><td>사람 궤적으로 학습한 VQ-VAE 코드북 16개</td></tr>
+<tr><td>평가</td><td>후회(regret)</td><td>남겨 둔 장면에서 A/B 선택 일치율</td></tr>
+</table>
+<p class="note">안전을 선호에서 빼면 “누구나 원하는 것”과 “사람마다 다른 것”이 분리되어, 질문이 스타일에만 쓰인다.</p>
+<aside>지난 미팅 피드백 반영. 안전을 선호에 넣으면 모든 사용자가 같은 방향으로 가중치를 갖게 되어 개인화 신호가 묻힙니다.</aside>
+</section>

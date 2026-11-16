@@ -1,0 +1,342 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&display=swap"><style>
+@page { size: 1920px 1080px; margin: 0; }
+html, body { margin: 0; padding: 0; }
+:root {
+  --ink: #17221E;
+  --paper: #F4F5F1;
+  --paper2: #E4EAE5;
+  --card: #FBFBF8;
+  --line: #CBD5CF;
+  --muted: #4A5852;
+  --accent: #1F7A55;
+  --warm: #B4532A;
+  --mint: #A9D9C2;
+}
+body { font-family: 'IBM Plex Sans KR', Arial, sans-serif; color: var(--ink); }
+section {
+  background: var(--paper);
+  color: var(--ink);
+  padding: 128px 128px 160px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  counter-increment: page;
+}
+section.alt { background: var(--paper2); }
+section.pn::after {
+  content: counter(page);
+  position: absolute;
+  right: 128px;
+  bottom: 64px;
+  width: 80px;
+  text-align: right;
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  font-size: 24px;
+  color: var(--muted);
+}
+.head { display: flex; flex-direction: column; gap: 16px; }
+.eyebrow { font-size: 24px; font-weight: 600; letter-spacing: 2px; color: var(--accent); }
+h2 { font-size: 60px; font-weight: 700; line-height: 1.2; color: var(--ink); }
+.lead { font-size: 32px; line-height: 1.5; color: var(--muted); }
+.body { font-size: 30px; line-height: 1.5; color: var(--ink); }
+.small { font-size: 24px; line-height: 1.45; color: var(--muted); }
+.cards { display: grid; gap: 32px; }
+.c2 { grid-template-columns: 1fr 1fr; }
+.c3 { grid-template-columns: 1fr 1fr 1fr; }
+.card {
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  padding: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.card h3 { font-size: 36px; font-weight: 700; line-height: 1.25; color: var(--ink); }
+.card .txt { font-size: 28px; line-height: 1.5; color: var(--muted); }
+.card .tag { font-size: 24px; font-weight: 600; color: var(--accent); }
+.card.warn { border-color: var(--warm); }
+.card.warn .tag { color: var(--warm); }
+ul.pts { font-size: 30px; line-height: 1.5; color: var(--ink); padding-left: 40px; }
+ul.pts li { margin-bottom: 14px; }
+.num { font-family: 'IBM Plex Mono', 'Courier New', monospace; font-weight: 600; }
+table.data { font-size: 28px; color: var(--ink); width: 100%; }
+table.data .hi { color: var(--accent); }
+table.data .lo { color: var(--warm); }
+.note { font-size: 24px; line-height: 1.45; color: var(--muted); }
+
+/* cover */
+section.cover { background: var(--ink); color: var(--paper); justify-content: space-between; padding: 128px; }
+section.cover .eyebrow { color: var(--mint); }
+section.cover h1 { font-size: 96px; font-weight: 700; line-height: 1.15; color: var(--paper); }
+section.cover .sub { font-size: 40px; line-height: 1.4; color: #BFD8CD; }
+section.cover .who { font-size: 28px; color: #BFD8CD; }
+
+/* pipeline */
+.flow { display: flex; align-items: stretch; gap: 0; }
+.step {
+  flex: 1;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.step .k { font-family: 'IBM Plex Mono', 'Courier New', monospace; font-size: 24px; font-weight: 600; color: var(--accent); }
+.step h3 { font-size: 32px; font-weight: 700; line-height: 1.25; color: var(--ink); }
+.step .txt { font-size: 24px; line-height: 1.45; color: var(--muted); }
+.step.key { border-color: var(--accent); background: #E3F1E9; }
+.arrow { width: 56px; display: flex; align-items: center; justify-content: center; }
+.arrow x-shape { width: 36px; height: 20px; background: var(--muted); }
+
+/* big numbers */
+.bigrow { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 32px; }
+.big {
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  padding: 40px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.big .val { white-space: nowrap; font-family: 'IBM Plex Mono', 'Courier New', monospace; font-size: 72px; font-weight: 600; line-height: 1.1; color: var(--ink); }
+.big .lab { font-size: 30px; font-weight: 600; color: var(--ink); }
+.big .txt { font-size: 24px; line-height: 1.45; color: var(--muted); }
+.big.key { border-color: var(--accent); background: #E3F1E9; }
+.big.key .val { color: var(--accent); }
+
+/* images */
+.shots { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
+.shot { display: flex; flex-direction: column; gap: 16px; }
+.shot img { width: 800px; height: 452px; object-fit: contain; border-radius: 12px; border: 2px solid var(--line); background: var(--card); }
+.shot .cap { font-size: 26px; line-height: 1.4; color: var(--muted); }
+
+/* abstract */
+.abs { background: var(--card); border-left: 6px solid var(--accent); padding: 32px 40px; display: flex; flex-direction: column; gap: 16px; }
+.abs .t { font-size: 30px; font-weight: 700; line-height: 1.35; color: var(--ink); }
+.abs .b { font-size: 24px; line-height: 1.55; color: var(--ink); }
+
+/* statement */
+section.dark { background: var(--ink); color: var(--paper); }
+section.dark h2 { color: var(--paper); }
+section.dark .eyebrow { color: var(--mint); }
+section.dark.pn::after { color: #BFD8CD; }
+.qlist { display: flex; flex-direction: column; gap: 24px; }
+.q { display: flex; gap: 32px; align-items: flex-start; border-top: 2px solid #3A4A43; padding-top: 24px; }
+.q .n { font-family: 'IBM Plex Mono', 'Courier New', monospace; font-size: 36px; font-weight: 600; color: var(--mint); width: 64px; }
+.q .w { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.q h3 { font-size: 36px; font-weight: 700; line-height: 1.3; color: var(--paper); }
+.q .txt { font-size: 26px; line-height: 1.45; color: #BFD8CD; }
+
+/* arrival */
+@keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.in { animation: rise 500ms ease-out both; animation-delay: calc(var(--i, 0) * 120ms); }
+
+section { position: relative; width: 1920px; height: 1080px; overflow: hidden; break-after: page; }
+h1, h2, h3, p { margin: 0; }
+.in { animation: none !important; }
+.arr { font-size: 32px; color: var(--muted); }
+table.data { border-collapse: collapse; }
+table.data th { text-align: left; font-size: 24px; color: var(--muted); border-bottom: 2px solid var(--ink); padding: 0.35em 0.6em; }
+table.data td { border-bottom: 1px solid var(--line); padding: 0.35em 0.6em; }
+</style></head><body><section id="cover" class="cover">
+<p class="eyebrow">NuRI LAB 랩미팅 · 2026. 11. 18</p>
+<div class="head">
+<h1>질문 몇 개로 배우는<br>개인별 보행 스타일 선호</h1>
+<p class="sub">군중 속 로봇이 “내가 원하는 방식”으로 지나가게 하기</p>
+</div>
+<p class="who">[발표자 이름] · 11/25 OpenReview 제출 준비</p>
+
+</section>
+<section id="problem" class="pn">
+<div class="head">
+<p class="eyebrow">문제</p>
+<h2>같은 장면에서도 사람마다 원하는 로봇 움직임이 다르다</h2>
+</div>
+<div class="cards c3">
+<div class="card in" style="--i:0"><p class="tag">양보</p><h3>일찍 비켜 주기 vs 속도 유지</h3><p class="txt">조심스러운 로봇을 원하는 사람, 흐름을 끊지 않는 로봇을 원하는 사람</p></div>
+<div class="card in" style="--i:1"><p class="tag">지나가는 위치</p><h3>내 뒤로 vs 내 앞으로</h3><p class="txt">앞을 가로지르는 것을 싫어하는 사람, 짧게 지나가길 원하는 사람</p></div>
+<div class="card in" style="--i:2"><p class="tag">우회 폭</p><h3>크게 돌기 vs 가깝게 지나가기</h3><p class="txt">여유 공간을 중시하는 사람, 효율을 중시하는 사람</p></div>
+</div>
+<p class="body">기존 군중 주행 정책은 <b>고정된 하나의 “사회적 규범”</b>을 최적화한다. 목표: <b>A/B 질문 몇 개</b>로 그 사람의 선호를 알아내고, 실행 시 경로 선택에 반영한다.</p>
+
+</section>
+<section id="decisions" class="pn alt">
+<div class="head">
+<p class="eyebrow">지난 미팅 이후 정한 방향</p>
+<h2>안전은 거르고, 선호는 스타일만 배운다</h2>
+</div>
+<table class="data">
+<tr><th style="width:26%">항목</th><th style="width:37%">이전</th><th style="width:37%">지금</th></tr>
+<tr><td>안전</td><td>선호 모델의 특징 중 하나</td><td>후보를 거르는 필터 (사람과 최소 거리, 진행)</td></tr>
+<tr><td>선호 특징</td><td>안전·효율 섞인 6개</td><td>방향성 없는 스타일 5개: 지나가는 쪽, 앞/뒤, 양보, 우회 폭, 사람다움</td></tr>
+<tr><td>경로 후보</td><td>사전학습 정책 샘플</td><td>사람 궤적으로 학습한 VQ-VAE 코드북 16개</td></tr>
+<tr><td>평가</td><td>후회(regret)</td><td>남겨 둔 장면에서 A/B 선택 일치율</td></tr>
+</table>
+<p class="note">안전을 선호에서 빼면 “누구나 원하는 것”과 “사람마다 다른 것”이 분리되어, 질문이 스타일에만 쓰인다.</p>
+
+</section>
+<section id="pipeline" class="pn">
+<div class="head">
+<p class="eyebrow">방법</p>
+<h2>다섯 단계로 개인 선호를 경로 선택에 반영</h2>
+</div>
+<div class="flow">
+<div class="step in" style="--i:0"><p class="k">1</p><h3>코드북 후보</h3><p class="txt">VQ-VAE 16코드, 4.8초 경로 (등속 대비 편차)</p></div>
+<div class="arrow"><div class="arr">▶</div></div>
+<div class="step in" style="--i:1"><p class="k">2</p><h3>안전 필터</h3><p class="txt">사람과 ≥ 0.5 m, 진행 ≥ 최고의 0.5배, 안전 후보 ≥ 4개</p></div>
+<div class="arrow"><div class="arr">▶</div></div>
+<div class="step in" style="--i:2"><p class="k">3</p><h3>스타일 특징 φ</h3><p class="txt">쪽, 앞/뒤, 양보, 우회, 사람다움 (코드 prior)</p></div>
+<div class="arrow"><div class="arr">▶</div></div>
+<div class="step key in" style="--i:3"><p class="k">4</p><h3>A/B 질문</h3><p class="txt">베이지안 Bradley–Terry, EUBO로 다음 질문 선택</p></div>
+<div class="arrow"><div class="arr">▶</div></div>
+<div class="step in" style="--i:4"><p class="k">5</p><h3>실행</h3><p class="txt">안전 후보 중 θ̂·φ 최대 경로</p></div>
+</div>
+<div class="cards c2">
+<div class="card"><p class="tag">선호 모델</p><p class="txt">P(A ≻ B) = σ(θ·(φ(A) − φ(B))), 사전분포 N(0, I), 답할 때마다 라플라스 근사로 사후분포 갱신</p></div>
+<div class="card"><p class="tag">질문 선택</p><p class="txt">EUBO: 두 보기 중 더 좋은 쪽의 기대 효용이 큰 쌍을 묻는다. 비교: 무작위, Active Query, prior만, 평균 θ</p></div>
+</div>
+
+</section>
+<section id="codebook" class="pn alt">
+<div class="head">
+<p class="eyebrow">후보를 코드북에서 만드는 이유</p>
+<h2>정책 샘플은 스타일이 거의 다르지 않다</h2>
+</div>
+<table class="data">
+<tr><th style="width:34%">후보 (2.4초 시점)</th><th style="width:16%;text-align:right">좌우 끝점 퍼짐</th><th style="width:16%;text-align:right">쌍별 거리</th><th style="width:17%;text-align:right">양쪽으로 갈림</th><th style="width:17%;text-align:right">앞/뒤 갈림</th></tr>
+<tr><td>Crowd-FM v3 (다듬은 샘플)</td><td style="text-align:right">0.11 m</td><td style="text-align:right">0.13 m</td><td style="text-align:right">5%</td><td style="text-align:right">6%</td></tr>
+<tr><td>Crowd-FM (원래 샘플)</td><td style="text-align:right">0.12 m</td><td style="text-align:right">0.22 m</td><td style="text-align:right">5%</td><td style="text-align:right">9%</td></tr>
+<tr><td>Crowd-FM gcp</td><td style="text-align:right">0.13 m</td><td style="text-align:right">0.15 m</td><td style="text-align:right">6%</td><td style="text-align:right">8%</td></tr>
+<tr><td class="hi"><b>VQ-VAE 코드북 (16개)</b></td><td class="hi" style="text-align:right">0.52 m</td><td class="hi" style="text-align:right">0.63 m</td><td class="hi" style="text-align:right">22%</td><td class="hi" style="text-align:right">36%</td></tr>
+</table>
+<div class="cards c2">
+<div class="card"><p class="tag">결론</p><p class="txt">물어볼 “서로 다른 스타일”이 있어야 질문이 의미가 있다. 코드북은 좌우 퍼짐이 약 4배 커서 후보 생성기로 쓴다.</p></div>
+<div class="card warn"><p class="tag">주의 · 향후 과제</p><p class="txt">Crowd-FM 샘플링 설정(guidance 0.01, 20개)은 바꿔 보지 않았다. 고른 코드를 정책(PRIEST)으로 다듬는 구조는 향후 과제.</p></div>
+</div>
+
+</section>
+<section id="setup" class="pn">
+<div class="head">
+<p class="eyebrow">실험 설정</p>
+<h2>실제 보행 장면 + 합성 사용자</h2>
+</div>
+<div class="cards c3">
+<div class="card"><p class="tag">장면</p><h3>Grand Central</h3><p class="txt">충돌 예상 16,209개 (테스트 구간, 목적지 ≥ 12초)</p></div>
+<div class="card"><p class="tag">장면</p><h3>ETH/UCY</h3><p class="txt">충돌 예상 590개 (목적지 ≥ 8초, 안전 후보 ≥ 4개)</p></div>
+<div class="card"><p class="tag">충돌 장면이란</p><h3>예측 충돌</h3><p class="txt">로봇 직진, 사람 등속일 때 8초 안에 1 m 이내</p></div>
+</div>
+<div class="cards c2">
+<div class="card"><p class="tag">합성 사용자 200명</p><p class="txt"><b>dense</b>: θ ~ N(0, I), 모든 축을 조금씩<br><b>sparse</b>: 한두 축만 크게 (Dirichlet 0.3)<br>답: P(A) = σ(5 · (u(A) − u(B)))</p></div>
+<div class="card"><p class="tag">평가</p><p class="txt">질문 장면 10개에서 최대 20문항 → 처음 보는 테스트 장면 20개에서 A/B 선택 일치율</p></div>
+</div>
+
+</section>
+<section id="results" class="pn alt">
+<div class="head">
+<p class="eyebrow">결과 (4개 설정 범위)</p>
+<h2>질문 5개로 일치율이 우연 수준에서 0.8 이상으로</h2>
+</div>
+<div class="bigrow">
+<div class="big in" style="--i:0"><p class="lab">질문 0개 (데이터 prior만)</p><p class="val">0.52–0.54</p><p class="txt">사람다운 경로만 고르면 개인 선호와 거의 우연 수준으로 맞는다</p></div>
+<div class="big key in" style="--i:1"><p class="lab">질문 5개 (EUBO)</p><p class="val">0.81–0.84</p><p class="txt">처음 보는 장면에서의 A/B 선택 일치율</p></div>
+<div class="big in" style="--i:2"><p class="lab">질문 20개 (EUBO)</p><p class="val">0.88–0.92</p><p class="txt">추가 질문의 이득은 점점 줄어든다</p></div>
+</div>
+<p class="note">설정: GC dense, GC sparse, ETH/UCY dense, ETH/UCY sparse. 사용자 200명 평균.</p>
+
+</section>
+<section id="eubo" class="pn">
+<div class="head">
+<p class="eyebrow">질문 선택 비교 (질문 5개, 괄호는 20개)</p>
+<h2>EUBO는 무작위보다 4/4, Active Query보다 3/4 설정에서 유의하게 좋다</h2>
+</div>
+<table class="data">
+<tr><th style="width:19%">설정</th><th style="width:11%;text-align:right">prior</th><th style="width:15%;text-align:right">무작위</th><th style="width:15%;text-align:right">AQ</th><th style="width:15%;text-align:right">EUBO</th><th style="width:12%;text-align:right">−무작위</th><th style="width:13%;text-align:right">−AQ</th></tr>
+<tr><td>GC dense</td><td style="text-align:right">0.535</td><td style="text-align:right">0.789 (0.902)</td><td style="text-align:right">0.816 (0.898)</td><td class="hi" style="text-align:right">0.828 (0.911)</td><td class="hi" style="text-align:right">+0.039*</td><td class="lo" style="text-align:right">+0.012 n.s.</td></tr>
+<tr><td>GC sparse</td><td style="text-align:right">0.522</td><td style="text-align:right">0.760 (0.874)</td><td style="text-align:right">0.793 (0.876)</td><td class="hi" style="text-align:right">0.809 (0.892)</td><td class="hi" style="text-align:right">+0.049*</td><td class="hi" style="text-align:right">+0.016*</td></tr>
+<tr><td>ETH/UCY dense</td><td style="text-align:right">0.536</td><td style="text-align:right">0.816 (0.903)</td><td style="text-align:right">0.824 (0.908)</td><td class="hi" style="text-align:right">0.842 (0.920)</td><td class="hi" style="text-align:right">+0.026*</td><td class="hi" style="text-align:right">+0.019*</td></tr>
+<tr><td>ETH/UCY sparse</td><td style="text-align:right">0.527</td><td style="text-align:right">0.780 (0.872)</td><td style="text-align:right">0.801 (0.885)</td><td class="hi" style="text-align:right">0.824 (0.881)</td><td class="hi" style="text-align:right">+0.044*</td><td class="hi" style="text-align:right">+0.023*</td></tr>
+</table>
+<p class="note">* 사용자 단위 짝지은 부트스트랩 95% 구간이 0을 포함하지 않음. n.s. = 유의하지 않음 (GC dense EUBO−AQ: [−0.002, +0.028]). 20문항에서는 방법 간 차이가 줄어든다.</p>
+
+</section>
+<section id="checks" class="pn alt">
+<div class="head">
+<p class="eyebrow">결과가 설정 선택에 좌우되는지 점검</p>
+<h2>세 가지 점검 모두 결론을 바꾸지 않았다</h2>
+</div>
+<div class="cards c3">
+<div class="card in" style="--i:0"><p class="tag">질문 장면 풀</p><h3>충돌 / 비충돌 / 전체</h3><p class="txt">GC에서 질문을 뽑는 장면을 바꿔도 차이 없음. 36개 비교 중 4개만 유의했고, 모두 비충돌·전체 쪽이 약간 높음 (예: EUBO dense 5문항 +0.02).</p></div>
+<div class="card in" style="--i:1"><p class="tag">ETH/UCY 목적지 기준</p><h3>12초 → 8초</h3><p class="txt">장면 수 281개 → 590개. 일치율은 ±0.01 이내로 같다. 본문은 8초, 12초는 부록.</p></div>
+<div class="card in" style="--i:2"><p class="tag">코드 prior 입력</p><h3>주변 사람 정보</h3><p class="txt">ETH/UCY에서 NLL 2.034 (자기 정보만) vs 2.044 (주변 사람 추가). 사람 정보는 prior에 도움이 되지 않았다.</p></div>
+</div>
+<p class="note">ETH/Hotel 단일 데이터셋 제외(leave-one-out) 실험은 하지 않았다. 두 데이터셋을 합쳐도 장면의 3%다.</p>
+
+</section>
+<section id="pilot" class="pn">
+<div class="head">
+<p class="eyebrow">실제 사람 파일럿 (v2, 60문항, 약 13분)</p>
+<h2>실제 GC 장면 44개 + 일부러 만든 사회적 장면 16개</h2>
+</div>
+<div class="shots">
+<div class="shot"><img src="queue1.png" alt="줄 서기 장면: 왼쪽 보기는 줄의 틈으로 가로지르고, 오른쪽 보기는 줄 끝으로 돌아간다"><p class="cap">줄 서기: 틈으로 가로지르기 vs 줄 끝으로 돌아가기</p></div>
+<div class="shot"><img src="talk2.png" alt="대화 무리 장면: 왼쪽 보기는 무리 바깥으로 돌아가고, 오른쪽 보기는 무리 사이를 지나간다"><p class="cap">대화 무리: 바깥으로 돌기 vs 무리 사이로 지나가기</p></div>
+</div>
+
+</section>
+<section id="pilot2" class="pn alt">
+<div class="head">
+<p class="eyebrow">파일럿 설계와 분석</p>
+<h2>개인 θ가 공통 θ보다 더 잘 맞히는가</h2>
+</div>
+<div class="cards c2">
+<div class="card"><p class="tag">문항 60개</p><p class="txt">GC 44개: 5개 축 × 8 + 반복 4<br>새 장면 16개: 줄 서기, 대화 무리, 일행, 느린 보행자 × 4<br>모든 보기는 사람과 ≥ 0.8 m<br>파일럿 전용 특징 <b>group</b>: 무리 사이 통과</p></div>
+<div class="card"><p class="tag">분석: 학습 42문항 → 테스트 14문항</p><p class="txt"><b>personal</b>: 본인 답으로 추정한 θ<br><b>shared</b>: 다른 참가자들의 공통 θ<br><b>prior</b>: 사람다운 경로만 고르기<br><b>반복 일관성</b>: 예측의 상한</p></div>
+</div>
+<p class="note">claude.ai 페이지 또는 로그인 없는 오프라인 HTML로 진행. 참가자 코드만 기록. 논문에 싣기 전 JBNU IRB 심의 면제 확인 필요 (연구 책임자: 교수님).</p>
+
+</section>
+<section id="abstract" class="pn">
+<div class="head">
+<p class="eyebrow">OpenReview 제출용 초록 (약 190단어)</p>
+<h2>초록 초안</h2>
+</div>
+<div class="abs">
+<p class="t">Learning Individual Walking-Style Preferences for Crowd Navigation from a Few Pairwise Queries</p>
+<p class="b">People differ in how they want a robot to move through a crowd: some prefer it to yield early, others to keep pace; some want it to pass behind them, others in front. Existing crowd-navigation policies optimize a fixed notion of social compliance and cannot adapt to such individual preferences. We present a framework that identifies a user’s walking-style preference from a handful of pairwise (A/B) queries and uses it to select the robot’s path at test time. A VQ-VAE trained on human pedestrian trajectories provides a codebook of walking behaviours that generates style-diverse, human-like candidate paths. Unsafe candidates are filtered out, and each remaining candidate is described by interpretable style features: passing side, passing in front or behind, yielding, detour width, and human-likeness. A Bayesian Bradley–Terry model over these features is updated after each answer, and queries are chosen by the expected utility of the best option (EUBO). On held-out situations from Grand Central and ETH/UCY with simulated users, the human-data prior alone agrees with a user’s pairwise preferences only at chance level (0.52–0.54). Five queries raise agreement to 0.81–0.84, and twenty to 0.88–0.92. With five queries, EUBO significantly outperforms random queries in all four settings and an active-query baseline in three of four.</p>
+</div>
+
+</section>
+<section id="limits" class="pn alt">
+<div class="head">
+<p class="eyebrow">한계와 대응</p>
+<h2>가장 큰 한계는 실제 사람으로 검증하지 않았다는 것</h2>
+</div>
+<table class="data">
+<tr><th style="width:38%">한계</th><th style="width:14%">심각도</th><th style="width:48%">대응</th></tr>
+<tr><td>합성 사용자 (실제 선호 미검증)</td><td class="lo">큼</td><td>파일럿 v2 (IRB 확인 후 수집)</td></tr>
+<tr><td>개루프 평가 (실행 중 재계획 없음)</td><td>중간</td><td>2D 재계획 폐루프 (1–2일), Gazebo는 향후</td></tr>
+<tr><td>4.8초 코드북: 돌아가기 = 큰 우회</td><td>중간</td><td>group·detour가 섞임을 명시, 정책으로 다듬기는 향후</td></tr>
+<tr><td>선형 선호 모델</td><td>작음</td><td>해석 가능성으로 정당화</td></tr>
+<tr><td>안전 거리: 벤치마크 0.5 m, 파일럿 0.8 m</td><td>작음</td><td>0.8 m로 벤치마크 재실행 가능</td></tr>
+</table>
+
+</section>
+<section id="asks" class="pn dark">
+<div class="head">
+<p class="eyebrow">오늘 결정이 필요한 것</p>
+<h2>11/25 제출 전에 정해야 할 네 가지</h2>
+</div>
+<div class="qlist">
+<div class="q in" style="--i:0"><p class="n">1</p><div class="w"><h3>후보 생성: 코드북 유지 + 정책 다듬기는 향후 과제?</h3><p class="txt">정책 샘플은 다양성이 약 4배 작다. 정책 샘플링 설정을 더 바꿔 볼지도 함께.</p></div></div>
+<div class="q in" style="--i:1"><p class="n">2</p><div class="w"><h3>폐루프 평가 범위: 2D 재계획 vs Gazebo</h3><p class="txt">2D는 1–2일, Gazebo는 제출 전 어려움.</p></div></div>
+<div class="q in" style="--i:2"><p class="n">3</p><div class="w"><h3>파일럿: IRB 심의 면제 신청 (연구 책임자)</h3><p class="txt">면제 확인 후 8–10명 수집, 결과는 반박 기간이나 수정본에 추가.</p></div></div>
+<div class="q in" style="--i:3"><p class="n">4</p><div class="w"><h3>벤치마크 안전 거리 0.8 m로 재실행 여부</h3><p class="txt">파일럿과 기준을 맞출지.</p></div></div>
+</div>
+
+</section>
+</body></html>

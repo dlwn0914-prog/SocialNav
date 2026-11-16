@@ -1,0 +1,22 @@
+<section id="pipeline" class="pn">
+<div class="head">
+<p class="eyebrow">방법</p>
+<h2>다섯 단계로 개인 선호를 경로 선택에 반영</h2>
+</div>
+<div class="flow">
+<div class="step in" style="--i:0"><p class="k">1</p><h3>코드북 후보</h3><p class="txt">VQ-VAE 16코드, 4.8초 경로 (등속 대비 편차)</p></div>
+<div class="arrow"><x-shape kind="arrow-right"></x-shape></div>
+<div class="step in" style="--i:1"><p class="k">2</p><h3>안전 필터</h3><p class="txt">사람과 ≥ 0.5 m, 진행 ≥ 최고의 0.5배, 안전 후보 ≥ 4개</p></div>
+<div class="arrow"><x-shape kind="arrow-right"></x-shape></div>
+<div class="step in" style="--i:2"><p class="k">3</p><h3>스타일 특징 φ</h3><p class="txt">쪽, 앞/뒤, 양보, 우회, 사람다움 (코드 prior)</p></div>
+<div class="arrow"><x-shape kind="arrow-right"></x-shape></div>
+<div class="step key in" style="--i:3"><p class="k">4</p><h3>A/B 질문</h3><p class="txt">베이지안 Bradley–Terry, EUBO로 다음 질문 선택</p></div>
+<div class="arrow"><x-shape kind="arrow-right"></x-shape></div>
+<div class="step in" style="--i:4"><p class="k">5</p><h3>실행</h3><p class="txt">안전 후보 중 θ̂·φ 최대 경로</p></div>
+</div>
+<div class="cards c2">
+<div class="card"><p class="tag">선호 모델</p><p class="txt">P(A ≻ B) = σ(θ·(φ(A) − φ(B))), 사전분포 N(0, I), 답할 때마다 라플라스 근사로 사후분포 갱신</p></div>
+<div class="card"><p class="tag">질문 선택</p><p class="txt">EUBO: 두 보기 중 더 좋은 쪽의 기대 효용이 큰 쌍을 묻는다. 비교: 무작위, Active Query, prior만, 평균 θ</p></div>
+</div>
+<aside>코드북이 다양한 걷는 방식을 후보로 주고, 필터가 위험한 것을 빼고, 남은 후보를 해석 가능한 스타일 특징으로 표현합니다. 선형 모델이라 θ를 그대로 해석할 수 있습니다.</aside>
+</section>

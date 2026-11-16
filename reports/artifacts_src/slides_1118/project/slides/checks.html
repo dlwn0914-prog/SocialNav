@@ -1,0 +1,13 @@
+<section id="checks" class="pn alt">
+<div class="head">
+<p class="eyebrow">결과가 설정 선택에 좌우되는지 점검</p>
+<h2>세 가지 점검 모두 결론을 바꾸지 않았다</h2>
+</div>
+<div class="cards c3">
+<div class="card in" style="--i:0"><p class="tag">질문 장면 풀</p><h3>충돌 / 비충돌 / 전체</h3><p class="txt">GC에서 질문을 뽑는 장면을 바꿔도 차이 없음. 36개 비교 중 4개만 유의했고, 모두 비충돌·전체 쪽이 약간 높음 (예: EUBO dense 5문항 +0.02).</p></div>
+<div class="card in" style="--i:1"><p class="tag">ETH/UCY 목적지 기준</p><h3>12초 → 8초</h3><p class="txt">장면 수 281개 → 590개. 일치율은 ±0.01 이내로 같다. 본문은 8초, 12초는 부록.</p></div>
+<div class="card in" style="--i:2"><p class="tag">코드 prior 입력</p><h3>주변 사람 정보</h3><p class="txt">ETH/UCY에서 NLL 2.034 (자기 정보만) vs 2.044 (주변 사람 추가). 사람 정보는 prior에 도움이 되지 않았다.</p></div>
+</div>
+<p class="note">ETH/Hotel 단일 데이터셋 제외(leave-one-out) 실험은 하지 않았다. 두 데이터셋을 합쳐도 장면의 3%다.</p>
+<aside>세 번째는 솔직하게 말씀드릴 부분입니다. prior가 주변 사람에 반응하지 않으므로, 사람다움 특징은 “상황에 맞는 행동”보다 “평소 걷는 방식”에 가깝습니다.</aside>
+</section>
