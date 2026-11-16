@@ -20,12 +20,13 @@ Answers, either
   JSON: the responses collection as exported (a list of docs, a list of
         {"id", "data"} rows, or {uid: doc}); a doc is the page's record
         {code, answers: {qid: {picked, ...}}}, picked = index into q["codes"]
+  dir:  one JSON doc per participant (results sent from pilot_offline.html)
   CSV:  columns participant, qid, picked
 
 Usage:
     PYTHONPATH=. .venv/bin/python utils/analyze_pilot.py \
-        --answers results/codebook/pilot/responses.json \
-        --out results/codebook/pilot/analysis.json
+        --answers results/codebook/pilot_v2/responses \
+        --out results/codebook/pilot_v2/analysis.json
 """
 import argparse
 import csv
@@ -37,6 +38,17 @@ import numpy as np
 from src.preference.bayesian_query import laplace_posterior
 
 
+def load_docs(path):
+    """Page records from a JSON export, a single doc or a directory of docs."""
+    if os.path.isdir(path):
+        return [d for f in sorted(os.listdir(path)) if f.endswith(".json")
+                for d in load_docs(os.path.join(path, f))]
+    raw = json.load(open(path))
+    if isinstance(raw, dict):
+        raw = [raw] if "answers" in raw else [dict(v, _id=k) for k, v in raw.items()]
+    return [r.get("data", r) for r in raw]
+
+
 def load_answers(path):
     """Returns {participant: {qid: picked}}."""
     if path.endswith(".csv"):
@@ -44,12 +56,8 @@ def load_answers(path):
         for row in csv.DictReader(open(path)):
             out.setdefault(row["participant"], {})[row["qid"]] = int(row["picked"])
         return out
-    raw = json.load(open(path))
-    if isinstance(raw, dict):
-        raw = [dict(v, _id=k) for k, v in raw.items()]
     out = {}
-    for n, doc in enumerate(raw):
-        doc = doc.get("data", doc)
+    for n, doc in enumerate(load_docs(path)):
         name = doc.get("code") or doc.get("_id") or f"p{n}"
         while name in out:  # same code typed from two accounts
             name += "+"
@@ -79,12 +87,12 @@ def boot(v, rng, n=2000):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--questions", default="results/codebook/pilot/questions.json")
+    p.add_argument("--questions", default="results/codebook/pilot_v2/questions.json")
     p.add_argument("--answers", required=True)
     p.add_argument("--min-fit", type=int, default=20, help="drop participants with fewer fit answers")
     p.add_argument("--prior-std", type=float, default=1.0)
     p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--out", default="results/codebook/pilot/analysis.json")
+    p.add_argument("--out", default="results/codebook/pilot_v2/analysis.json")
     args = p.parse_args()
     rng = np.random.default_rng(args.seed)
 
@@ -130,8 +138,7 @@ def main():
 
     # screen side bias needs the page records (CSV has no left/flip)
     if not args.answers.endswith(".csv"):
-        raw = json.load(open(args.answers))
-        docs = raw.values() if isinstance(raw, dict) else [r.get("data", r) for r in raw]
+        docs = load_docs(args.answers)
         left = [a["picked"] == a["left"] for d in docs for a in (d.get("answers") or {}).values() if "left" in a]
         ms = [a["ms"] for d in docs for a in (d.get("answers") or {}).values() if "ms" in a]
     else:
