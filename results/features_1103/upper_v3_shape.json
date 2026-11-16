@@ -1,0 +1,196 @@
+{
+ "args": {
+  "scene_dir": "/home/nuri2/crowd_fm_ws/scenarios_v3/gc_all",
+  "ego_future": "/home/nuri2/crowd_fm_ws/scenarios_gc/ego_future_all.json",
+  "candidates": "candidates",
+  "n_dirs": 20000,
+  "seed": 0,
+  "cv_folds": 5,
+  "answer": "shape",
+  "out": "results/features_1103/upper_v3_shape.json"
+ },
+ "n_scenes": 149,
+ "random_top1": 0.06469073812716675,
+ "sets": {
+  "base3 (current)": {
+   "d": 3,
+   "features": [
+    "total_turn_angle_deg",
+    "target_alignment_cos",
+    "min_dist_static"
+   ],
+   "personal_top1": 0.6711409395973155,
+   "personal_regret": 0.03380873684660609,
+   "population_top1": 0.10738255033557047,
+   "population_regret": 0.3156827949204506,
+   "population_direction": [
+    -0.6245626153580723,
+    0.7265777213205815,
+    0.28636751627528567
+   ],
+   "population_cv_top1": 0.0738255033557047,
+   "population_cv_regret": 0.35528228680220736
+  },
+  "base2 + min_dist_moving": {
+   "d": 3,
+   "features": [
+    "total_turn_angle_deg",
+    "target_alignment_cos",
+    "min_dist_moving"
+   ],
+   "personal_top1": 0.7449664429530202,
+   "personal_regret": 0.023701661302966553,
+   "population_top1": 0.0738255033557047,
+   "population_regret": 0.31558687473356334,
+   "population_direction": [
+    -0.18437652860690018,
+    0.9808808717020944,
+    0.062273680056735066
+   ],
+   "population_cv_top1": 0.08053691275167785,
+   "population_cv_regret": 0.3512351533962588
+  },
+  "+ passing_side": {
+   "d": 4,
+   "features": [
+    "total_turn_angle_deg",
+    "target_alignment_cos",
+    "min_dist_moving",
+    "passing_side"
+   ],
+   "personal_top1": 0.7583892617449665,
+   "personal_regret": 0.023601144461631595,
+   "population_top1": 0.0738255033557047,
+   "population_regret": 0.30974447772374214,
+   "population_direction": [
+    -0.19046871313608588,
+    0.9716816133655071,
+    0.07775818284228657,
+    0.11623328509834983
+   ],
+   "population_cv_top1": 0.0738255033557047,
+   "population_cv_regret": 0.3302673117122748
+  },
+  "+ intrusion_time": {
+   "d": 5,
+   "features": [
+    "total_turn_angle_deg",
+    "target_alignment_cos",
+    "min_dist_moving",
+    "passing_side",
+    "intrusion_time_s"
+   ],
+   "personal_top1": 0.7919463087248322,
+   "personal_regret": 0.018145573677988747,
+   "population_top1": 0.09395973154362416,
+   "population_regret": 0.3066875153839654,
+   "population_direction": [
+    -0.5099230322615599,
+    0.6968014577889403,
+    -0.11468658108172462,
+    -0.1810978701126113,
+    -0.45661447540878985
+   ],
+   "population_cv_top1": 0.0738255033557047,
+   "population_cv_regret": 0.33220822132438116
+  },
+  "+ progress": {
+   "d": 6,
+   "features": [
+    "total_turn_angle_deg",
+    "target_alignment_cos",
+    "min_dist_moving",
+    "passing_side",
+    "intrusion_time_s",
+    "progress_m"
+   ],
+   "personal_top1": 0.9731543624161074,
+   "personal_regret": 0.0017585750781413316,
+   "population_top1": 0.1476510067114094,
+   "population_regret": 0.28148929178614285,
+   "population_direction": [
+    -0.6715348420800947,
+    0.4500418445964242,
+    0.049775643717386256,
+    -0.34821297819626723,
+    0.2000024055859063,
+    -0.42751893391143125
+   ],
+   "population_cv_top1": 0.11409395973154363,
+   "population_cv_regret": 0.3297597773612992
+  },
+  "base3 + social3 (= --social)": {
+   "d": 6,
+   "features": [
+    "total_turn_angle_deg",
+    "target_alignment_cos",
+    "min_dist_static",
+    "min_dist_moving",
+    "passing_side",
+    "intrusion_time_s"
+   ],
+   "personal_top1": 0.8993288590604027,
+   "personal_regret": 0.008263700109447505,
+   "population_top1": 0.09395973154362416,
+   "population_regret": 0.3131742001494909,
+   "population_direction": [
+    -0.5685813979609747,
+    0.6850120149203316,
+    0.17566255643042158,
+    -0.12048438229598354,
+    -0.3538920218449253,
+    0.19199049474681365
+   ],
+   "population_cv_top1": 0.06711409395973154,
+   "population_cv_regret": 0.35286667654308007
+  },
+  "fixed6 (start dropped)": {
+   "d": 6,
+   "features": [
+    "total_turn_angle_deg",
+    "target_alignment_cos",
+    "min_dist_static",
+    "min_dist_moving_fix",
+    "passing_side_fix",
+    "intrusion_time_fix"
+   ],
+   "personal_top1": 0.8791946308724832,
+   "personal_regret": 0.010980962605585839,
+   "population_top1": 0.09395973154362416,
+   "population_regret": 0.30658427232231306,
+   "population_direction": [
+    -0.5909067599185104,
+    0.7364921203837794,
+    0.04661481930535556,
+    0.19759865480445754,
+    -0.24766748853075243,
+    -0.07649315695328485
+   ],
+   "population_cv_top1": 0.0738255033557047,
+   "population_cv_regret": 0.3372287018748833
+  },
+  "draft5": {
+   "d": 5,
+   "features": [
+    "total_turn_angle_deg",
+    "target_alignment_cos",
+    "min_dist_moving_fix",
+    "passing_side_soft",
+    "intrusion_depth"
+   ],
+   "personal_top1": 0.8657718120805369,
+   "personal_regret": 0.011363729109837073,
+   "population_top1": 0.087248322147651,
+   "population_regret": 0.31256071596792684,
+   "population_direction": [
+    -0.4671904770038504,
+    0.8605777833446384,
+    0.145019437608011,
+    -0.024545599266943413,
+    0.13966321377881138
+   ],
+   "population_cv_top1": 0.0738255033557047,
+   "population_cv_regret": 0.3616783052664725
+  }
+ }
+}

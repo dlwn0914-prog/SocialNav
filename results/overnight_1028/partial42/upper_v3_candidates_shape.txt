@@ -1,0 +1,12 @@
+30 usable scenes (candidates, moving-people safety filter)
+random pick: top-1 0.069
+
+               feature set  d  personal top1  regret  population top1  regret  pop-cv top1  regret
+           base3 (current)  3          0.567   0.055            0.067   0.237        0.067   0.288
+   base2 + min_dist_moving  3          0.733   0.024            0.067   0.252        0.067   0.313
+            + passing_side  4          0.733   0.024            0.200   0.250        0.067   0.359
+          + intrusion_time  5          0.733   0.023            0.100   0.235        0.067   0.327
+                + progress  6          0.933   0.007            0.133   0.210        0.067   0.303
+base3 + social3 (= --social)  6          0.867   0.015            0.133   0.234        0.033   0.344
+
+saved results/overnight_1028/upper_v3_candidates_shape.json

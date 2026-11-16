@@ -1,0 +1,5 @@
+                                 set    usable   safe  gap[m]  lateral[m]
+                 v2 raw (pre-PRIEST)  154/201    13.7    0.35        0.42
+        v2 refined (shared endpoint)  138/201    13.4    0.18        0.00
+                 v3 raw (pre-PRIEST)   30/42     13.4    0.35        0.42
+ v3 refined (per-candidate endpoint)   32/42     13.9    0.31        0.41
