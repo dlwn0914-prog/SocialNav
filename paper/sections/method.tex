@@ -28,7 +28,14 @@ A VQ-VAE~\citep{vandenoord2017neural} with $K=16$ codes is trained on pedestrian
 from constant velocity (6 points every 0.8\,s, 4.8\,s). Decoding every code from the robot's current speed gives $K$ candidate paths.
 A prior network $p(\text{code} \mid s)$, trained on the same data with the destination and a summary of nearby people as input,
 scores how typical each candidate is for a person in that situation.
-\todo{training details: data split by person, epochs, prior inputs; GC: 12,159 test conflict situations; ETH/UCY: 590}
+One codebook and one prior are trained per dataset, on the training split of a split by person (about 80/10/10\%, no person in two
+splits); every evaluation situation comes from the test split. A training sample is any annotated pedestrian walking at
+$\ge$0.5\,m/s with six future annotations available, together with up to 12 people within 6\,m. The VQ-VAE ($K=16$ codes,
+8-dimensional latent) is trained with Adam (learning rate $10^{-3}$) for 30 epochs (batch 1024) on Grand Central and 150 epochs
+(batch 256) on the smaller ETH/UCY. The prior is an MLP with two hidden layers of 256 units, trained with Adam ($10^{-3}$, weight decay
+$10^{-5}$) for 30 epochs on the samples whose destination is far enough ahead to matter (12\,s on Grand Central, 8\,s on ETH/UCY);
+its input is the speed, the two past positions, the destination (the track's last position) and an 8-number summary of nearby people
+(nearest person ahead, smallest time to a $<$1\,m approach, people ahead on the left and right). Dataset sizes are in Table~\ref{tab:data}.
 
 \paragraph{Safety filter.}
 People are extrapolated at constant velocity; a candidate is safe if its minimum distance to everyone is at least $c=0.5$\,m and its

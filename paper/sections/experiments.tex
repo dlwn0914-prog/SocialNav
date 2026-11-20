@@ -8,8 +8,30 @@ in closed loop cost reach or safety?
 \subsection{Setup}
 \paragraph{Data.} Grand Central~\citep{zhou2012understanding} (GC) and ETH/UCY~\citep{pellegrini2009you,lerner2007crowds}, split by person.
 Test situations are held-out pedestrians with a predicted conflict (someone passes within 1\,m in the next 8\,s at constant velocity)
-and at least four safe candidates: 12{,}159 on GC (destination $\ge$12\,s ahead) and 590 on ETH/UCY ($\ge$8\,s; Appendix~\ref{app:eth_dest}).
-\todo{numbers of training people / samples per dataset}
+and at least four safe candidates: 12{,}159 on GC (destination $\ge$12\,s ahead) and 590 on ETH/UCY ($\ge$8\,s, because ETH/UCY tracks
+are short; Appendix~\ref{app:eth_dest}).
+Table~\ref{tab:data} gives the sizes. Grand Central is annotated every 0.8\,s; ETH/UCY (biwi\_eth, biwi\_hotel, students001,
+students003, crowds\_zara01, crowds\_zara02) every 0.4\,s and is subsampled to 0.8\,s so that both codebooks see the same input.
+
+\begin{table}[t]
+\centering
+\caption{Data. Samples are (pedestrian, frame) pairs; the split is by person. Prior: samples whose destination is at least 12\,s (GC) or
+8\,s (ETH/UCY) ahead. Evaluation: test-split situations with that destination, a predicted conflict and at least four safe candidates.}
+\label{tab:data}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrr}
+\toprule
+ & Grand Central & ETH/UCY \\
+\midrule
+People (train / val / test)        & 9{,}519 / 1{,}189 / 1{,}339 & 880 / 109 / 109 \\
+Samples (train / val / test)       & 223{,}603 / 27{,}368 / 34{,}734 & 13{,}851 / 1{,}803 / 1{,}570 \\
+Prior training samples (train / val) & 164{,}427 / 20{,}027 & 11{,}180 / 1{,}461 \\
+Median walking speed               & 1.15\,m/s & 0.91\,m/s \\
+Evaluation situations (people)     & 12{,}159 (1{,}047) & 590 (78) \\
+Safe candidates per situation (median) & 10 of 16 & 7 of 16 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \paragraph{Users.} Real preferences are unknown, so we use synthetic users: $\theta^\ast \sim \mathcal{N}(0,I)$ normalized
 (\emph{dense}: every style matters) or Dirichlet(0.3) magnitudes with random signs (\emph{sparse}: one or two styles dominate),
