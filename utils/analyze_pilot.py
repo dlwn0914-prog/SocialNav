@@ -3,13 +3,17 @@
 utils/build_pilot_questionnaire.py, answers from the pilot page).
 
 Per participant, a linear Bradley-Terry theta over the normalized style
-features (laplace_posterior, prior N(0, I)) is fit on the fit questions and
-scored on the held-out test questions:
+features (laplace_posterior, prior N(0, I)) is fit on the train questions
+("fit" in v1/v2) and scored on the held-out test questions, which never
+enter any fit:
   personal   -- the participant's own theta
-  shared     -- one theta fit on every OTHER participant's fit answers
+  shared     -- one theta fit on every OTHER participant's train answers
   prior      -- pick the more human-like option (higher log-prior)
-  personal_cv-- leave-one-question-out over all fit + test questions
-                (40 predictions instead of 10, less noisy)
+From v3 on, the page shows the whole train block before any test question
+and records each answer's position (n); a participant who answered a test
+question before finishing the train block is reported (order_ok = False).
+(The leave-one-question-out score over train + test of earlier versions is
+gone: it fit on test answers.)
 Also: repeat consistency (same code picked when the question comes back with
 sides swapped -- the ceiling any model can reach), screen-left bias, per-axis
 choice rates, pairwise answer agreement between participants and the cosine
@@ -25,8 +29,8 @@ Answers, either
 
 Usage:
     PYTHONPATH=. .venv/bin/python utils/analyze_pilot.py \
-        --answers results/codebook/pilot_v2/responses \
-        --out results/codebook/pilot_v2/analysis.json
+        --answers results/codebook/pilot_v3/responses \
+        --out results/codebook/pilot_v3/analysis.json
 """
 import argparse
 import csv
@@ -87,12 +91,12 @@ def boot(v, rng, n=2000):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--questions", default="results/codebook/pilot_v2/questions.json")
+    p.add_argument("--questions", default="results/codebook/pilot_v3/questions.json")
     p.add_argument("--answers", required=True)
-    p.add_argument("--min-fit", type=int, default=20, help="drop participants with fewer fit answers")
+    p.add_argument("--min-fit", type=int, default=8, help="drop participants with fewer train answers")
     p.add_argument("--prior-std", type=float, default=1.0)
     p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--out", default="results/codebook/pilot_v2/analysis.json")
+    p.add_argument("--out", default="results/codebook/pilot_v3/analysis.json")
     args = p.parse_args()
     rng = np.random.default_rng(args.seed)
 
@@ -101,7 +105,8 @@ def main():
     D = len(feats)
     x = {q["id"]: np.array(q["x"]) for q in Q["questions"]}
     answers = load_answers(args.answers)
-    split = lambda s, a: [q for q in Q["questions"] if q["split"] == s and q["id"] in a]
+    alias = {"train": "fit"}
+    split = lambda s, a: [q for q in Q["questions"] if alias.get(q["split"], q["split"]) == s and q["id"] in a]
     people = {k: a for k, a in answers.items() if len(split("fit", a)) >= args.min_fit}
     print(f"{len(answers)} participants, {len(people)} with >= {args.min_fit} fit answers")
     for k in sorted(set(answers) - set(people)):
@@ -115,11 +120,6 @@ def main():
         others = [diffs(split("fit", b), b, x) for j, b in people.items() if j != k]
         shared = laplace_posterior(np.concatenate(others), D, args.prior_std)[0] if others else np.zeros(D)
         human = np.eye(D)[feats.index("human")]
-        cv = []
-        for q in fit + test:
-            rest = [r for r in fit + test if r is not q]
-            th = laplace_posterior(diffs(rest, a, x), D, args.prior_std)[0]
-            cv.append(accuracy(th, [q], a, x))
         rep = [a[q["id"]] == 1 - a[q["repeat_of"]]  # sides swapped: same code = other index
                for q in split("repeat", a) if q["repeat_of"] in a]
         rows[k] = {
@@ -127,7 +127,6 @@ def main():
             "personal": accuracy(thetas[k], test, a, x),
             "shared": accuracy(shared, test, a, x),
             "prior": accuracy(human, test, a, x),
-            "personal_cv": float(np.mean(cv)),
             "repeat": float(np.mean(rep)) if rep else np.nan,
             "theta": thetas[k].round(3).tolist(),
             # per axis: rate of picking the option that is higher on that axis
@@ -136,9 +135,17 @@ def main():
                           for i, f in enumerate(feats)},
         }
 
-    # screen side bias needs the page records (CSV has no left/flip)
+    # screen side bias and answer order need the page records (CSV has neither)
     if not args.answers.endswith(".csv"):
         docs = load_docs(args.answers)
+        for n_doc, doc in enumerate(docs):
+            name = doc.get("code") or doc.get("_id") or f"p{n_doc}"
+            pos = {qid: r["n"] for qid, r in (doc.get("answers") or {}).items() if "n" in r}
+            if name in rows and pos:
+                blk = {q["id"]: alias.get(q["split"], q["split"]) for q in Q["questions"]}
+                tr = [v for k, v in pos.items() if blk.get(k) == "fit"]
+                te = [v for k, v in pos.items() if blk.get(k) in ("test", "repeat")]
+                rows[name]["order_ok"] = bool(not tr or not te or max(tr) < min(te))
         left = [a["picked"] == a["left"] for d in docs for a in (d.get("answers") or {}).values() if "left" in a]
         ms = [a["ms"] for d in docs for a in (d.get("answers") or {}).values() if "ms" in a]
     else:
@@ -151,20 +158,20 @@ def main():
     unit = {k: t / (np.linalg.norm(t) + 1e-12) for k, t in thetas.items()}
     cos = [float(unit[i] @ unit[j]) for n, i in enumerate(names) for j in names[n + 1:]]
 
-    summary = {m: boot([rows[k][m] for k in names], rng) for m in ("personal", "shared", "prior", "personal_cv", "repeat")}
+    summary = {m: boot([rows[k][m] for k in names], rng) for m in ("personal", "shared", "prior", "repeat")}
     summary["personal-shared"] = boot([rows[k]["personal"] - rows[k]["shared"] for k in names], rng)
     summary["pair_agreement"] = [float(np.mean(agree)), float(np.min(agree)), float(np.max(agree))] if agree else None
     summary["theta_cos"] = [float(np.mean(cos)), float(np.min(cos)), float(np.max(cos))] if cos else None
     summary["left_rate"] = float(np.mean(left)) if left else None
     summary["median_ms"] = float(np.median(ms)) if ms else None
 
-    print(f"\n{'participant':12s} {'n':>3s} {'pers':>5s} {'shared':>6s} {'prior':>5s} {'cv':>5s} {'rep':>4s}  theta " + " ".join(feats))
+    print(f"\n{'participant':12s} {'n':>3s} {'pers':>5s} {'shared':>6s} {'prior':>5s} {'rep':>4s} {'order':>5s}  theta " + " ".join(feats))
     for k in names:
         r = rows[k]
-        print(f"{k:12s} {r['n']:3d} {r['personal']:5.2f} {r['shared']:6.2f} {r['prior']:5.2f} {r['personal_cv']:5.2f} "
-              f"{r['repeat']:4.2f}  " + " ".join(f"{t:+.2f}" for t in r["theta"]))
+        print(f"{k:12s} {r['n']:3d} {r['personal']:5.2f} {r['shared']:6.2f} {r['prior']:5.2f} "
+              f"{r['repeat']:4.2f} {str(r.get('order_ok', '-')):>5s}  " + " ".join(f"{t:+.2f}" for t in r["theta"]))
     print("\nmean [95% CI over participants]")
-    for m in ("personal", "shared", "personal-shared", "prior", "personal_cv", "repeat"):
+    for m in ("personal", "shared", "personal-shared", "prior", "repeat"):
         v = summary[m]
         print(f"  {m:16s} {v[0]:+.3f} [{v[1]:+.3f}, {v[2]:+.3f}]")
     if agree:

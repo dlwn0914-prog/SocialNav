@@ -1,0 +1,260 @@
+<title>로봇 경로 스타일 파일럿</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one task column; instructions -> two synchronized replays side by side -> two answer buttons. */
+:root {
+  --bg:#f6f7f5; --surface:#ffffff; --fg:#1d2421; --muted:#5d6963; --line:#d9dfdb;
+  --accent:#1f7a55; --warn:#b4532a; --robot:#2a63c9; --person:#6b726e; --trail:rgba(42,99,201,.25); --grid:#e7ebe8;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#141917; --surface:#1c2320; --fg:#e3e9e5; --muted:#9aa8a1; --line:#2f3a35;
+  --accent:#5cc796; --warn:#e88b5f; --robot:#6f9ff0; --person:#a7b0ab; --trail:rgba(111,159,240,.3); --grid:#26302c; color-scheme:dark } }
+:root[data-theme="dark"] {
+  --bg:#141917; --surface:#1c2320; --fg:#e3e9e5; --muted:#9aa8a1; --line:#2f3a35;
+  --accent:#5cc796; --warn:#e88b5f; --robot:#6f9ff0; --person:#a7b0ab; --trail:rgba(111,159,240,.3); --grid:#26302c; color-scheme:dark }
+body { background:var(--bg); color:var(--fg); font-family:var(--sans); font-size:15px; line-height:1.65;
+  padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); }
+main { max-width:860px; margin:0 auto; padding-block:32px 56px; display:grid; gap:22px; }
+main > * { min-width:0; }
+h1 { font-size:1.6rem; line-height:1.3; margin:0; text-wrap:balance; }
+h2 { font-size:1.1rem; margin:0 0 6px; }
+p { margin:0; max-width:68ch; }
+.meta { font-family:var(--mono); font-size:.8rem; color:var(--muted); margin-top:6px; }
+.card { background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:18px; display:grid; gap:12px; }
+.note { font-size:.88rem; color:var(--muted); }
+.warn { color:var(--warn); font-weight:600; }
+ul.rules { margin:0; padding-left:1.2em; display:grid; gap:4px; max-width:68ch; }
+label { font-weight:600; font-size:.9rem; }
+input[type=text] { font:inherit; font-family:var(--mono); padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg); width:10em; }
+button { font:inherit; cursor:pointer; border-radius:6px; border:1px solid var(--line); background:var(--surface); color:var(--fg); padding:8px 14px; }
+button.primary { background:var(--accent); border-color:var(--accent); color:var(--surface); font-weight:600; }
+button:focus-visible, input:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+button:disabled { opacity:.5; cursor:default; }
+.row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.progress { height:6px; background:var(--line); border-radius:3px; overflow:hidden; }
+.progress > div { height:100%; background:var(--accent); width:0; transition:width .2s; }
+.pair { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+.panel { display:grid; gap:8px; min-width:0; }
+.panel canvas { width:100%; max-width:100%; aspect-ratio:1/1; border:1px solid var(--line); border-radius:6px; background:var(--surface); display:block; }
+.panel button.pick { font-size:1.05rem; font-weight:700; padding:12px; }
+.panel button.pick:hover { border-color:var(--accent); color:var(--accent); }
+.legend { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:.82rem; color:var(--muted); }
+.legend span::before { content:""; display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:-1px; background:var(--c); }
+.caption { margin:0; padding:8px 12px; border-left:3px solid var(--accent); background:var(--bg); font-weight:600; }
+.clock { font-family:var(--mono); font-size:.85rem; color:var(--muted); }
+.tw { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; font-size:.88rem; }
+th, td { padding:6px 10px; border-bottom:1px solid var(--line); text-align:left; font-variant-numeric:tabular-nums; }
+th { font-size:.75rem; color:var(--muted); }
+kbd { font-family:var(--mono); font-size:.8em; border:1px solid var(--line); border-radius:4px; padding:0 5px; }
+@media (prefers-reduced-motion: reduce) { .progress > div { transition:none; } }
+</style>
+<main>
+<header>
+<h1>로봇 경로 스타일 파일럿</h1>
+<div class="meta">NuRI Lab 내부 파일럿 · 20문항 · 약 5분 · <span id="ver"></span></div>
+</header>
+
+<section class="card" id="intro">
+<h2>안내</h2>
+<p>로봇이 사람들 사이를 지나 목적지 방향으로 가는 장면을 두 가지 방식으로 보여 드립니다. 두 경로 모두 안전합니다(사람과 0.5 m 이상 떨어져 지나감). 이 로봇을 쓰는 사람으로서 <b>어느 쪽 움직임이 더 마음에 드는지</b> 골라 주세요. 정답은 없습니다.</p>
+<ul class="rules">
+<li>사람들 사이를 지나가는 장면, 줄 서 있는 사람들, 둘러서서 대화하는 사람들, 나란히 걸어오는 일행, 앞에서 천천히 걷는 사람 등 여러 장면이 나옵니다. 장면 설명이 있으면 먼저 읽어 주세요.</li>
+<li>그림은 위에서 내려다본 모습이고, 로봇은 아래에서 위쪽으로 출발합니다. 4.8초 동안의 움직임이 반복 재생됩니다.</li>
+<li>점선은 로봇이 갈 경로, 초록 화살표는 목적지 방향입니다. 회색 점은 사람이고, 짧은 선은 걷는 방향입니다. 사람들을 잇는 선은 같은 줄이나 일행이라는 표시입니다.</li>
+<li>같은 장면이 두 번 나올 수 있습니다. 그때도 그 순간 끌리는 쪽을 고르면 됩니다.</li>
+<li>참가자 코드(예: P03)만 저장합니다. 이름은 적지 마세요. 응답은 claude.ai 계정의 익명 id와 함께 이 페이지의 저장소에 남고, 실험 담당자만 볼 수 있습니다.</li>
+</ul>
+<div class="row">
+<label for="pcode">참가자 코드</label>
+<input type="text" id="pcode" maxlength="12" autocomplete="off" placeholder="P03" pattern="[A-Za-z0-9-]{1,12}">
+<button class="primary" id="start">시작</button>
+</div>
+<p class="note" id="status">저장소에 연결하는 중…</p>
+</section>
+
+<section class="card" id="task" hidden>
+<div class="row" style="justify-content:space-between">
+<b id="qnum">1 / 20</b><span class="clock" id="clock">t = 0.0 s</span>
+</div>
+<div class="progress"><div id="bar"></div></div>
+<div class="legend"><span style="--c:var(--robot)">로봇</span><span style="--c:var(--person)">사람</span><span style="--c:var(--accent)">목적지 방향</span></div>
+<p class="caption" id="caption" hidden></p>
+<div class="pair">
+<div class="panel"><canvas id="cA" width="400" height="400" aria-label="경로 A 재생"></canvas><button class="pick" id="pA">A가 더 좋다 <kbd>←</kbd></button></div>
+<div class="panel"><canvas id="cB" width="400" height="400" aria-label="경로 B 재생"></canvas><button class="pick" id="pB">B가 더 좋다 <kbd>→</kbd></button></div>
+</div>
+<div class="row"><button id="replay">처음부터 다시 재생</button><span class="note" id="saveState"></span></div>
+</section>
+
+<section class="card" id="done" hidden>
+<h2>끝났습니다. 감사합니다.</h2>
+<p>응답 <b id="nDone">0</b>개가 저장되었습니다. 이 창을 닫으셔도 됩니다.</p>
+</section>
+
+<section class="card" id="owner" hidden>
+<h2>응답 현황 (담당자에게만 보임)</h2>
+<div class="tw"><table><thead><tr><th>참가자 코드</th><th>응답 수</th><th>마지막 응답</th></tr></thead><tbody id="ownerRows"><tr><td colspan="3" class="note">아직 응답이 없습니다. 참가자가 시작하면 여기에 실시간으로 나타납니다.</td></tr></tbody></table></div>
+</section>
+</main>
+<script>
+const DATA = {"version":"pilot-v3","dt":0.8,"questions":[{"id":"side4","axis":"side","split":"train","block":0,"people":[[-0.5130000114440918,-2.496999979019165,0.15199999511241913,0.9110000133514404],[1.2690000534057617,2.4100000858306885,-1.0099999904632568,0.6600000262260437],[-1.9249999523162842,-2.680000066757202,0.5730000138282776,1.3600000143051147],[-3.312000036239624,-0.13699999451637268,0.10000000149011612,1.0199999809265137],[-1.2380000352859497,3.7909998893737793,-1.3009999990463257,0.8270000219345093],[-1.7120000123977661,4.785999774932861,-1.1759999990463257,0.3409999907016754],[2.750999927520752,4.330999851226807,-1.0520000457763672,1.1829999685287476],[-4.889999866485596,1.996999979019165,-1.184999942779541,0.3149999976158142],[-5.238999843597412,-1.0989999771118164,0.7429999709129333,0.37400001287460327],[-5.172999858856201,2.1619999408721924,-1.3049999475479126,0.3790000081062317],[-5.008999824523926,2.5420000553131104,-1.0230000019073486,0.21899999678134918],[5.859000205993652,0.6549999713897705,-0.6489999890327454,-0.3569999933242798]],"dest":[19.926000595092773,-0.43799999356269836],"paths":[[[1.054,-0.131],[2.005,-0.632],[2.838,-1.26],[3.581,-1.967],[4.241,-2.712],[4.869,-3.433]],[[1.029,0.088],[1.893,0.47],[2.691,1.052],[3.34,1.746],[3.94,2.468],[4.454,3.13]]],"codes":[13,12],"caption":"","groups":[]},{"id":"slow3","axis":"side","split":"train","block":0,"people":[[2.143,-0.101,0.397,0.0]],"dest":[18.002,-1.212],"paths":[[[0.859,0.043],[1.689,0.24],[2.496,0.522],[3.265,0.888],[4.02,1.244],[4.723,1.603]],[[0.855,-0.131],[1.607,-0.632],[2.241,-1.26],[2.785,-1.967],[3.246,-2.712],[3.675,-3.433]]],"codes":[14,13],"caption":"앞에서 한 사람이 같은 방향으로 천천히 걷고 있습니다.","groups":[]},{"id":"front4","axis":"front","split":"train","block":0,"people":[[-1.5570000410079956,-1.5399999618530273,0.5099999904632568,-1.3049999475479126],[2.4240000247955322,0.8190000057220459,-0.8989999890327454,0.027000000700354576],[-2.2869999408721924,1.4789999723434448,-1.215000033378601,-0.0020000000949949026],[-0.02199999988079071,-2.9730000495910645,0.07000000029802322,-1.2489999532699585],[-3.322000026702881,-0.34700000286102295,0.8999999761581421,0.23899999260902405],[-0.5,3.7780001163482666,0.878000020980835,-0.45899999141693115],[0.7580000162124634,3.9189999103546143,0.3479999899864197,-1.2380000352859497],[-2.3359999656677246,3.259000062942505,-1.4179999828338623,-0.43299999833106995],[-3.8910000324249268,-1.5490000247955322,0.9419999718666077,0.5979999899864197],[0.4020000100135803,-4.195000171661377,0.7229999899864197,-0.6809999942779541],[3.2190001010894775,3.677999973297119,-1.0549999475479126,0.26600000262260437],[5.203000068664551,0.5070000290870667,-0.8550000190734863,0.1340000033378601]],"dest":[29.433000564575195,2.0320000648498535],"paths":[[[0.918,0.018],[1.719,0.116],[2.544,0.262],[3.346,0.434],[4.129,0.62],[4.887,0.798]],[[0.923,-0.004],[1.763,-0.021],[2.638,-0.033],[3.49,-0.044],[4.344,-0.065],[5.182,-0.095]]],"codes":[9,1],"caption":"","groups":[]},{"id":"yield3","axis":"yield","split":"train","block":0,"people":[[-1.3990000486373901,0.746999979019165,-0.3409999907016754,1.2920000553131104],[-2.2869999408721924,0.04399999976158142,1.1130000352859497,-0.6489999890327454],[-1.2259999513626099,2.742000102996826,-0.5680000185966492,0.9580000042915344],[-1.2389999628067017,-3.509000062942505,1.4500000476837158,-0.24899999797344208],[3.1519999504089355,-2.6630001068115234,-0.8700000047683716,1.1369999647140503],[-4.802999973297119,-0.640999972820282,-0.9850000143051147,0.3790000081062317]],"dest":[27.527000427246094,-2.8459999561309814],"paths":[[[0.985,-0.025],[2.225,-0.074],[3.398,-0.139],[4.615,-0.195],[5.769,-0.238],[6.836,-0.286]],[[0.823,-0.002],[1.393,0.004],[2.002,0.047],[2.551,0.079],[3.086,0.118],[3.596,0.136]]],"codes":[7,4],"caption":"","groups":[]},{"id":"slow2","axis":"yield","split":"train","block":0,"people":[[2.341,0.198,0.43,0.0]],"dest":[17.947,1.879],"paths":[[[0.942,-0.035],[1.733,-0.196],[2.543,-0.397],[3.324,-0.628],[4.068,-0.898],[4.801,-1.192]],[[1.004,-0.08],[2.038,-0.334],[3.036,-0.691],[4.019,-1.069],[4.994,-1.456],[5.915,-1.869]]],"codes":[6,2],"caption":"앞에서 한 사람이 같은 방향으로 천천히 걷고 있습니다.","groups":[]},{"id":"detour3","axis":"detour","split":"train","block":0,"people":[[3.072000026702881,0.7269999980926514,-1.4459999799728394,0.01600000075995922],[2.930000066757202,1.8009999990463257,-0.699999988079071,0.14000000059604645],[4.4120001792907715,-0.9229999780654907,0.38499999046325684,-1.0470000505447388],[-0.19599999487400055,4.914000034332275,-1.2619999647140503,0.39399999380111694],[3.196000099182129,4.041999816894531,-0.8289999961853027,0.9490000009536743],[3.7869999408721924,-3.7990000247955322,0.5230000019073486,-1.0809999704360962],[1.774999976158142,-5.293000221252441,-1.1109999418258667,0.15000000596046448],[5.488999843597412,1.3589999675750732,-1.0299999713897705,0.8410000205039978],[4.951000213623047,2.803999900817871,-1.0770000219345093,0.9549999833106995]],"dest":[40.5359992980957,13.821999549865723],"paths":[[[0.771,0.043],[1.514,0.24],[2.234,0.522],[2.916,0.888],[3.583,1.244],[4.199,1.603]],[[0.772,-0.032],[1.544,-0.141],[2.307,-0.283],[3.073,-0.437],[3.83,-0.601],[4.56,-0.773]]],"codes":[14,5],"caption":"","groups":[]},{"id":"human2","axis":"human","split":"train","block":0,"people":[[-0.27000001072883606,0.734000027179718,-0.6769999861717224,-1.0080000162124634],[1.6330000162124634,-0.3269999921321869,0.36500000953674316,-0.6690000295639038],[1.753999948501587,-0.33399999141693115,0.5239999890327454,-0.6650000214576721],[1.0219999551773071,-1.6990000009536743,1.0920000076293945,-0.5920000076293945],[2.7760000228881836,-2.1449999809265137,1.1540000438690186,-0.4659999907016754],[-3.305000066757202,-2.242000102996826,-0.4779999852180481,-1.340000033378601],[-3.9649999141693115,1.7230000495910645,0.671999990940094,-0.5040000081062317],[2.7950000762939453,3.364000082015991,-1.0640000104904175,-0.2150000035762787],[-2.684000015258789,3.5420000553131104,-0.3070000112056732,-0.8389999866485596],[-4.632999897003174,1.1729999780654907,0.4399999976158142,-0.4970000088214874],[1.0829999446868896,-4.710000038146973,0.19699999690055847,-1.2359999418258667],[5.26200008392334,-2.494999885559082,0.7919999957084656,-0.9120000004768372]],"dest":[16.51300048828125,2.382999897003174],"paths":[[[0.92,0.059],[2.036,0.336],[3.057,0.673],[4.108,1.06],[5.099,1.459],[6.02,1.85]],[[0.928,-0.025],[2.11,-0.074],[3.226,-0.139],[4.385,-0.195],[5.481,-0.238],[6.492,-0.286]]],"codes":[0,7],"caption":"","groups":[]},{"id":"queue3","axis":"group","split":"train","block":0,"people":[[3.437,-2.844,0.0,0.0],[3.431,-1.982,0.0,0.0],[3.407,-1.119,0.0,0.0],[3.441,0.88,0.0,0.0],[3.459,1.742,0.0,0.0]],"dest":[16.906,1.452],"paths":[[[0.965,-0.025],[2.185,-0.074],[3.338,-0.139],[4.535,-0.195],[5.668,-0.238],[6.716,-0.286]],[[0.849,0.088],[1.533,0.47],[2.151,1.052],[2.62,1.746],[3.04,2.468],[3.374,3.13]]],"codes":[7,12],"caption":"사람들이 줄을 서 있습니다 (예: 카페 계산대 줄). 선으로 이어진 사람들이 한 줄입니다.","groups":[[0,1,2,3,4]]},{"id":"talk2","axis":"group","split":"train","block":0,"people":[[3.799,-0.273,0.0,0.0],[4.483,1.627,0.0,0.0],[2.594,1.186,0.0,0.0]],"dest":[20.938,-1.359],"paths":[[[0.896,0.018],[1.675,0.116],[2.478,0.262],[3.258,0.434],[4.019,0.62],[4.755,0.798]],[[0.935,-0.131],[1.768,-0.632],[2.482,-1.26],[3.106,-1.967],[3.648,-2.712],[4.157,-3.433]]],"codes":[9,13],"caption":"사람들이 둥글게 서서 대화하고 있습니다. 선으로 이어진 사람들이 한 무리입니다.","groups":[[0,1,2,0]]},{"id":"pair1","axis":"group","split":"train","block":0,"people":[[6.043,-0.571,-1.094,0.0],[6.056,1.156,-1.094,0.0]],"dest":[21.878,0.06],"paths":[[[0.806,0.018],[1.496,0.116],[2.209,0.262],[2.9,0.434],[3.571,0.62],[4.217,0.798]],[[0.845,-0.131],[1.588,-0.632],[2.213,-1.26],[2.748,-1.967],[3.2,-2.712],[3.619,-3.433]]],"codes":[9,13],"caption":"일행이 나란히 걸어오고 있습니다. 선으로 이어진 사람들이 일행입니다.","groups":[[0,1]]},{"id":"side8","axis":"side","split":"test","block":1,"people":[[-2.3499999046325684,1.871000051498413,1.246999979019165,-0.3440000116825104],[1.9270000457763672,3.3469998836517334,1.1629999876022339,0.1899999976158142],[4.335000038146973,-0.06700000166893005,1.1970000267028809,-0.14000000059604645],[-1.1619999408721924,-4.854000091552734,1.0429999828338623,-0.39399999380111694],[3.759000062942505,3.440000057220459,0.8500000238418579,0.03999999910593033],[-5.1519999504089355,2.4839999675750732,1.2130000591278076,-0.3630000054836273]],"dest":[14.680999755859375,-3.236999988555908],"paths":[[[0.813,0.043],[1.598,0.24],[2.36,0.522],[3.084,0.888],[3.793,1.244],[4.45,1.603]],[[0.809,-0.131],[1.516,-0.632],[2.105,-1.26],[2.603,-1.967],[3.019,-2.712],[3.402,-3.433]]],"codes":[14,13],"caption":"","groups":[]},{"id":"front7","axis":"front","split":"test","block":1,"people":[[0.0430000014603138,-1.6080000400543213,-0.08399999886751175,1.2039999961853027],[-0.48100000619888306,-1.6670000553131104,-0.531000018119812,0.18199999630451202],[-1.812999963760376,-0.44600000977516174,-1.1339999437332153,1.1770000457763672],[0.20999999344348907,-2.0789999961853027,-0.6930000185966492,0.4560000002384186],[2.0420000553131104,-0.9229999780654907,1.3279999494552612,-0.382999986410141],[-1.1449999809265137,2.188999891281128,0.2759999930858612,1.0859999656677246],[0.9169999957084656,2.3239998817443848,-0.925000011920929,0.35100001096725464],[-1.1890000104904175,2.2060000896453857,0.27300000190734863,1.0709999799728394],[1.809999942779541,-1.8380000591278076,-0.7260000109672546,0.4909999966621399],[-2.3529999256134033,-1.4809999465942383,-0.3959999978542328,0.3779999911785126],[2.3440001010894775,-1.6610000133514404,-0.8109999895095825,0.6990000009536743],[-2.7320001125335693,1.2489999532699585,0.3540000021457672,0.9120000004768372]],"dest":[23.31999969482422,-0.414000004529953],"paths":[[[1.14,-0.035],[2.129,-0.196],[3.137,-0.397],[4.115,-0.628],[5.058,-0.898],[5.989,-1.192]],[[1.135,0.018],[2.153,0.116],[3.195,0.262],[4.215,0.434],[5.215,0.62],[6.19,0.798]]],"codes":[6,9],"caption":"","groups":[]},{"id":"slow4","axis":"yield","split":"test","block":1,"people":[[2.027,0.106,0.489,0.0]],"dest":[24.323,-1.313],"paths":[[[0.926,-0.035],[1.7,-0.196],[2.494,-0.397],[3.258,-0.628],[3.986,-0.898],[4.702,-1.192]],[[0.988,-0.08],[2.005,-0.334],[2.986,-0.691],[3.953,-1.069],[4.911,-1.456],[5.817,-1.869]]],"codes":[6,2],"caption":"앞에서 한 사람이 같은 방향으로 천천히 걷고 있습니다.","groups":[]},{"id":"detour7","axis":"detour","split":"test","block":1,"people":[[-0.8650000095367432,0.0560000017285347,-1.1399999856948853,-0.2280000001192093],[-2.184999942779541,-0.34299999475479126,-1.0379999876022339,-0.12300000339746475],[-2.3989999294281006,-1.468999981880188,-1.0219999551773071,-0.2669999897480011],[1.475000023841858,2.4579999446868896,-0.9729999899864197,-1.0180000066757202],[3.2739999294281006,0.5619999766349792,1.281000018119812,0.050999999046325684],[-1.1319999694824219,5.433000087738037,-1.1380000114440918,-0.47600001096725464],[-5.758999824523926,-0.17100000381469727,1.3179999589920044,0.4729999899864197],[-5.796000003814697,0.4259999990463257,-0.7279999852180481,-0.06700000166893005]],"dest":[35.40700149536133,0.4320000112056732],"paths":[[[0.938,-0.025],[2.132,-0.074],[3.258,-0.139],[4.428,-0.195],[5.535,-0.238],[6.556,-0.286]],[[0.931,0.059],[2.057,0.336],[3.089,0.673],[4.151,1.06],[5.153,1.459],[6.085,1.85]]],"codes":[7,0],"caption":"","groups":[]},{"id":"human7","axis":"human","split":"test","block":1,"people":[[-0.7760000228881836,0.5569999814033508,0.17499999701976776,1.2769999504089355],[-1.1749999523162842,2.5859999656677246,1.3509999513626099,0.4390000104904175],[-3.565000057220459,1.4470000267028809,0.6259999871253967,1.2120000123977661],[-2.888000011444092,2.7219998836517334,0.19599999487400055,1.2510000467300415],[4.818999767303467,0.035999998450279236,0.7289999723434448,-0.5960000157356262],[-1.8459999561309814,4.6570000648498535,0.8629999756813049,0.34599998593330383],[0.34599998593330383,5.28000020980835,1.4819999933242798,0.5139999985694885],[-3.0329999923706055,5.150000095367432,-0.27900001406669617,-0.5680000185966492]],"dest":[17.73200035095215,-5.1579999923706055],"paths":[[[0.902,0.015],[1.802,0.086],[2.689,0.189],[3.579,0.313],[4.464,0.441],[5.318,0.57]],[[0.905,-0.131],[1.708,-0.632],[2.393,-1.26],[2.988,-1.967],[3.5,-2.712],[3.979,-3.433]]],"codes":[15,13],"caption":"","groups":[]},{"id":"queue4","axis":"group","split":"test","block":1,"people":[[3.485,-1.219,0.0,0.0],[3.427,0.692,0.0,0.0],[3.359,1.437,0.0,0.0],[3.503,2.182,0.0,0.0],[3.488,2.927,0.0,0.0]],"dest":[22.329,0.08],"paths":[[[1.038,-0.025],[2.332,-0.074],[3.558,-0.139],[4.828,-0.195],[6.034,-0.238],[7.155,-0.286]],[[0.947,-0.131],[1.792,-0.632],[2.518,-1.26],[3.154,-1.967],[3.708,-2.712],[4.229,-3.433]]],"codes":[7,13],"caption":"사람들이 줄을 서 있습니다 (예: 카페 계산대 줄). 선으로 이어진 사람들이 한 줄입니다.","groups":[[0,1,2,3,4]]},{"id":"talk4","axis":"group","split":"test","block":1,"people":[[3.81,-0.363,0.0,0.0],[4.228,1.787,0.0,0.0],[2.261,1.301,0.0,0.0]],"dest":[20.678,0.979],"paths":[[[0.85,-0.08],[1.73,-0.334],[2.573,-0.691],[3.402,-1.069],[4.223,-1.456],[4.99,-1.869]],[[0.782,0.018],[1.449,0.116],[2.138,0.262],[2.806,0.434],[3.454,0.62],[4.077,0.798]]],"codes":[2,9],"caption":"사람들이 둥글게 서서 대화하고 있습니다. 선으로 이어진 사람들이 한 무리입니다.","groups":[[0,1,2,0]]},{"id":"pair4","axis":"group","split":"test","block":1,"people":[[6.122,-0.851,-1.068,0.0],[6.079,0.787,-1.068,0.0]],"dest":[21.827,-1.981],"paths":[[[1.011,-0.131],[1.919,-0.632],[2.709,-1.26],[3.408,-1.967],[4.026,-2.712],[4.61,-3.433]],[[0.971,0.018],[1.826,0.116],[2.704,0.262],[3.56,0.434],[4.397,0.62],[5.208,0.798]]],"codes":[13,9],"caption":"일행이 나란히 걸어오고 있습니다. 선으로 이어진 사람들이 일행입니다.","groups":[[0,1]]},{"id":"yield3r","axis":"yield","split":"repeat","block":1,"people":[[-1.3990000486373901,0.746999979019165,-0.3409999907016754,1.2920000553131104],[-2.2869999408721924,0.04399999976158142,1.1130000352859497,-0.6489999890327454],[-1.2259999513626099,2.742000102996826,-0.5680000185966492,0.9580000042915344],[-1.2389999628067017,-3.509000062942505,1.4500000476837158,-0.24899999797344208],[3.1519999504089355,-2.6630001068115234,-0.8700000047683716,1.1369999647140503],[-4.802999973297119,-0.640999972820282,-0.9850000143051147,0.3790000081062317]],"dest":[27.527000427246094,-2.8459999561309814],"paths":[[[0.823,-0.002],[1.393,0.004],[2.002,0.047],[2.551,0.079],[3.086,0.118],[3.596,0.136]],[[0.985,-0.025],[2.225,-0.074],[3.398,-0.139],[4.615,-0.195],[5.769,-0.238],[6.836,-0.286]]],"codes":[4,7],"caption":"","groups":[]},{"id":"human2r","axis":"human","split":"repeat","block":1,"people":[[-0.27000001072883606,0.734000027179718,-0.6769999861717224,-1.0080000162124634],[1.6330000162124634,-0.3269999921321869,0.36500000953674316,-0.6690000295639038],[1.753999948501587,-0.33399999141693115,0.5239999890327454,-0.6650000214576721],[1.0219999551773071,-1.6990000009536743,1.0920000076293945,-0.5920000076293945],[2.7760000228881836,-2.1449999809265137,1.1540000438690186,-0.4659999907016754],[-3.305000066757202,-2.242000102996826,-0.4779999852180481,-1.340000033378601],[-3.9649999141693115,1.7230000495910645,0.671999990940094,-0.5040000081062317],[2.7950000762939453,3.364000082015991,-1.0640000104904175,-0.2150000035762787],[-2.684000015258789,3.5420000553131104,-0.3070000112056732,-0.8389999866485596],[-4.632999897003174,1.1729999780654907,0.4399999976158142,-0.4970000088214874],[1.0829999446868896,-4.710000038146973,0.19699999690055847,-1.2359999418258667],[5.26200008392334,-2.494999885559082,0.7919999957084656,-0.9120000004768372]],"dest":[16.51300048828125,2.382999897003174],"paths":[[[0.928,-0.025],[2.11,-0.074],[3.226,-0.139],[4.385,-0.195],[5.481,-0.238],[6.492,-0.286]],[[0.92,0.059],[2.036,0.336],[3.057,0.673],[4.108,1.06],[5.099,1.459],[6.02,1.85]]],"codes":[7,0],"caption":"","groups":[]}]};
+const Q = DATA.questions, DT = DATA.dt, T_END = DT * 6, HOLD = 1.2;
+document.getElementById("ver").textContent = DATA.version;
+const $ = id => document.getElementById(id);
+let db = null, uid = null, docRef = null, state = null, idx = 0, shownAt = 0, busy = false;
+
+function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function plan(seedStr) {
+  const r = rng(hash(seedStr));
+  const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const order = [0, 1].flatMap(b => shuf(Q.map((_, i) => i).filter(i => Q[i].block === b)));
+  return { order: order.map(i => Q[i].id), flip: Object.fromEntries(Q.map(q => [q.id, r() < 0.5 ? 1 : 0])) };
+}
+
+// ---- drawing ----
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function lerpPath(path, t) {
+  const pts = [[0, 0], ...path], k = Math.min(Math.floor(t / DT), 5), f = Math.min(t / DT - k, 1);
+  if (t >= T_END) return pts[6];
+  return [pts[k][0] + (pts[k + 1][0] - pts[k][0]) * f, pts[k][1] + (pts[k + 1][1] - pts[k][1]) * f];
+}
+function draw(cv, q, path, t) {
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth || 400;
+  if (cv.width !== Math.round(w * dpr)) { cv.width = cv.height = Math.round(w * dpr); }
+  const g = cv.getContext("2d"), S = cv.width / 9;
+  const X = (x, y) => [(4.5 - y) * S, (7.5 - x) * S];  // robot frame: x ahead -> up, y left -> left
+  g.clearRect(0, 0, cv.width, cv.height);
+  g.strokeStyle = css("--grid"); g.lineWidth = 1 * dpr;
+  for (let m = -4; m <= 4; m++) { const [a] = X(0, m); g.beginPath(); g.moveTo(a, 0); g.lineTo(a, cv.height); g.stroke(); }
+  for (let m = -1; m <= 7; m++) { const [, b] = X(m, 0); g.beginPath(); g.moveTo(0, b); g.lineTo(cv.width, b); g.stroke(); }
+  // destination direction
+  const dn = Math.hypot(q.dest[0], q.dest[1]), u = [q.dest[0] / dn, q.dest[1] / dn];
+  const [d0x, d0y] = X(0, 0), [d1x, d1y] = X(u[0] * 6.8, u[1] * 6.8);
+  g.strokeStyle = css("--accent"); g.globalAlpha = 0.55; g.lineWidth = 2 * dpr; g.setLineDash([2 * dpr, 4 * dpr]);
+  g.beginPath(); g.moveTo(d0x, d0y); g.lineTo(d1x, d1y); g.stroke(); g.setLineDash([]);
+  const ang = Math.atan2(d1y - d0y, d1x - d0x);
+  g.fillStyle = css("--accent"); g.beginPath(); g.moveTo(d1x, d1y);
+  g.lineTo(d1x - 12 * dpr * Math.cos(ang - 0.4), d1y - 12 * dpr * Math.sin(ang - 0.4));
+  g.lineTo(d1x - 12 * dpr * Math.cos(ang + 0.4), d1y - 12 * dpr * Math.sin(ang + 0.4)); g.fill(); g.globalAlpha = 1;
+  // planned path
+  g.strokeStyle = css("--robot"); g.lineWidth = 1.5 * dpr; g.setLineDash([5 * dpr, 4 * dpr]); g.globalAlpha = 0.6;
+  g.beginPath(); g.moveTo(...X(0, 0)); for (const p of path) g.lineTo(...X(p[0], p[1])); g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
+  // travelled part
+  g.strokeStyle = css("--robot"); g.lineWidth = 3 * dpr; g.beginPath(); g.moveTo(...X(0, 0));
+  for (let s = 0.1; s <= Math.min(t, T_END) + 1e-6; s += 0.1) g.lineTo(...X(...lerpPath(path, s))); g.stroke();
+  // group links (same queue / party)
+  const at = p => { const tt = Math.min(t, T_END); return X(p[0] + p[2] * tt, p[1] + p[3] * tt); };
+  g.strokeStyle = css("--person"); g.globalAlpha = 0.6; g.lineWidth = 2 * dpr; g.setLineDash([]);
+  for (const grp of q.groups || []) { g.beginPath(); grp.forEach((m, i) => (i ? g.lineTo : g.moveTo).call(g, ...at(q.people[m]))); g.stroke(); }
+  g.globalAlpha = 1;
+  // people
+  for (const p of q.people) {
+    const tt = Math.min(t, T_END), x = p[0] + p[2] * tt, y = p[1] + p[3] * tt;
+    const [a, b] = X(x, y), sp = Math.hypot(p[2], p[3]);
+    g.strokeStyle = css("--person"); g.globalAlpha = 0.35; g.lineWidth = 1.5 * dpr; g.beginPath(); g.moveTo(...X(p[0], p[1])); g.lineTo(a, b); g.stroke(); g.globalAlpha = 1;
+    g.fillStyle = css("--person"); g.beginPath(); g.arc(a, b, 0.2 * S, 0, 7); g.fill();
+    if (sp > 0.1) { const [e, f] = X(x + p[2] / sp * 0.55, y + p[3] / sp * 0.55); g.lineWidth = 2.5 * dpr; g.beginPath(); g.moveTo(a, b); g.lineTo(e, f); g.stroke(); }
+  }
+  // robot
+  const r = lerpPath(path, Math.min(t, T_END)), [ra, rb] = X(r[0], r[1]);
+  g.fillStyle = css("--robot"); g.strokeStyle = css("--surface"); g.lineWidth = 2 * dpr;
+  g.beginPath(); g.arc(ra, rb, 0.22 * S, 0, 7); g.fill(); g.stroke();
+}
+let t0 = performance.now(), raf = 0;
+function frame(now) {
+  const q = current(); if (!q) return;
+  const cyc = ((now - t0) / 1000) % (T_END + HOLD), t = Math.min(cyc, T_END);
+  const [l, r] = sides(q);
+  draw($("cA"), q, q.paths[l], t); draw($("cB"), q, q.paths[r], t);
+  $("clock").textContent = `t = ${t.toFixed(1)} s`;
+  raf = requestAnimationFrame(frame);
+}
+const current = () => state && idx < state.order.length ? Q.find(q => q.id === state.order[idx]) : null;
+const sides = q => state.flip[q.id] ? [1, 0] : [0, 1];
+
+// ---- flow ----
+function showQuestion() {
+  const q = current();
+  if (!q) { finish(); return; }
+  $("qnum").textContent = `${idx + 1} / ${state.order.length}`;
+  $("bar").style.width = `${100 * idx / state.order.length}%`;
+  $("caption").textContent = q.caption || ""; $("caption").hidden = !q.caption;
+  t0 = performance.now(); shownAt = Date.now();
+  cancelAnimationFrame(raf); raf = requestAnimationFrame(frame);
+}
+async function answer(side) {
+  const q = current(); if (!q || busy) return;
+  busy = true; $("pA").disabled = $("pB").disabled = true;
+  const [l, r] = sides(q), picked = side === 0 ? l : r;
+  const rec = { picked, code: q.codes[picked], left: l, ms: Date.now() - shownAt, n: Object.keys(state.answers).length, at: Date.now() };
+  state.answers[q.id] = rec;
+  if (docRef) {
+    $("saveState").textContent = "저장 중…";
+    try { await docRef.update({ answers: { [q.id]: rec }, updated: Date.now() }); $("saveState").textContent = "저장됨"; }
+    catch (e) { $("saveState").innerHTML = '<span class="warn">저장 실패. 다시 눌러 주세요.</span>'; delete state.answers[q.id]; busy = false; $("pA").disabled = $("pB").disabled = false; return; }
+  }
+  idx++; busy = false; $("pA").disabled = $("pB").disabled = false; showQuestion();
+}
+function finish() {
+  cancelAnimationFrame(raf);
+  $("task").hidden = true; $("done").hidden = false;
+  $("nDone").textContent = Object.keys(state.answers).length;
+}
+async function start() {
+  const code = $("pcode").value.trim();
+  if (!/^[A-Za-z0-9-]{1,12}$/.test(code)) { $("status").innerHTML = '<span class="warn">참가자 코드는 영문·숫자 12자 이내로 적어 주세요.</span>'; return; }
+  $("start").disabled = true;
+  let existing = null;
+  if (docRef) { try { const s = await docRef.get(); if (s.exists) existing = s.data(); } catch (e) {} }
+  if (existing && existing.order && existing.version === DATA.version) {
+    state = { order: existing.order, flip: existing.flip, answers: { ...(existing.answers || {}) } };
+  } else {
+    state = { ...plan((uid || "local") + code), answers: {} };
+    if (docRef) {
+      try { await docRef.set({ code, version: DATA.version, order: state.order, flip: state.flip, answers: {}, started: Date.now(), updated: Date.now() }); }
+      catch (e) { $("status").innerHTML = '<span class="warn">저장소에 쓸 수 없습니다. 담당자에게 공유 권한(Contributor 이상)을 요청해 주세요.</span>'; $("start").disabled = false; return; }
+    }
+  }
+  idx = state.order.findIndex(id => !state.answers[id]); if (idx < 0) idx = state.order.length;
+  $("intro").hidden = true; $("task").hidden = false; showQuestion();
+}
+$("start").onclick = start;
+$("pcode").addEventListener("keydown", e => { if (e.key === "Enter") start(); });
+$("pA").onclick = () => answer(0); $("pB").onclick = () => answer(1);
+$("replay").onclick = () => { t0 = performance.now(); };
+document.addEventListener("keydown", e => {
+  if ($("task").hidden || e.target.tagName === "INPUT") return;
+  if (e.key === "ArrowLeft") answer(0); else if (e.key === "ArrowRight") answer(1);
+});
+
+// ---- storage ----
+(async () => {
+  const timer = setTimeout(() => { if (!docRef) $("status").innerHTML = '<span class="warn">저장소에 연결하지 못했습니다. 응답이 저장되지 않으니 claude.ai에 로그인한 상태로 다시 열어 주세요.</span>'; }, 10000);
+  const [dbNs, user] = await Promise.all([window.claude?.use?.("db") ?? null, window.claude?.use?.("user") ?? null]);
+  if (!dbNs || !user) { clearTimeout(timer); $("status").innerHTML = '<span class="warn">이 화면에서는 응답을 저장할 수 없습니다. claude.ai에 로그인한 상태로 열어 주세요.</span>'; return; }
+  db = dbNs; uid = await user.id();
+  clearTimeout(timer);
+  if (!uid) { $("status").innerHTML = '<span class="warn">계정을 확인할 수 없어 응답을 저장할 수 없습니다.</span>'; return; }
+  docRef = db.doc("responses/" + uid);
+  $("status").textContent = "준비되었습니다. 참가자 코드를 적고 시작을 누르세요. 중간에 닫아도 같은 계정으로 다시 열면 이어서 할 수 있습니다.";
+  try { const s = await docRef.get(); if (s.exists && s.data().code) { $("pcode").value = s.data().code; $("status").textContent = `이전 응답 ${Object.keys(s.data().answers || {}).length}개가 있습니다. 시작을 누르면 이어서 진행합니다.`; } } catch (e) {}
+  if (await user.isOwner()) {
+    $("owner").hidden = false;
+    db.collection("responses").onSnapshot(snap => {
+      const rows = snap.docs.map(d => d.data()).filter(Boolean).sort((a, b) => (b.updated || 0) - (a.updated || 0));
+      const tb = $("ownerRows"); tb.textContent = "";
+      if (!rows.length) { tb.innerHTML = '<tr><td colspan="3" class="note">아직 응답이 없습니다. 참가자가 시작하면 여기에 실시간으로 나타납니다.</td></tr>'; return; }
+      for (const r of rows) {
+        const tr = document.createElement("tr");
+        for (const v of [r.code || "-", `${Object.keys(r.answers || {}).length} / ${Q.length}`, r.updated ? new Date(r.updated).toLocaleString("ko-KR") : "-"]) { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); }
+        tb.appendChild(tr);
+      }
+    }, () => {});
+  }
+})();
+</script>
