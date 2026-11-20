@@ -1,34 +1,48 @@
 \section{Introduction}
 \label{sec:intro}
 
-% Paragraph plan; each item is one paragraph.
-% (1) Motivation: robots sharing sidewalks/stations with people; "socially compliant" is not one thing.
-%     Individual users (the robot's owner/operator, or the person being accompanied) differ in passing side,
-%     front/behind, yielding and detour. \todo{one concrete example + citation on individual differences in proxemics}
-% (2) Gap: learned crowd-navigation policies (RL, imitation, generative planners) optimize a fixed objective
-%     or imitate an average pedestrian; preference-based learning in robotics needs many queries or a
-%     hand-designed trajectory space. \todo{cite crowd-nav policies, Sadigh et al. active preference learning}
-% (3) Key idea: separate WHAT the robot can do (a codebook of human walking behaviours, filtered for safety)
-%     from WHICH of those the user wants (a low-dimensional linear preference over interpretable style features),
-%     and ask only the most informative A/B questions.
-% (4) Contributions:
-%     - a VQ-VAE walking-behaviour codebook that yields diverse, human-like, safety-filterable candidates;
-%     - interpretable style features and a Bayesian Bradley--Terry preference with EUBO query selection;
-%     - an evaluation on Grand Central and ETH/UCY with a formal simple-regret protocol, comparisons against
-%       random and active-query selection, a DPO estimator and a flow-matching candidate generator,
-%       and a closed-loop replay.
+Robots increasingly share sidewalks, stations and shopping streets with people, and how such a robot moves through a crowd matters to
+the person it serves -- the user who sends a delivery robot, rides in a wheelchair or walks alongside a guide robot. ``Socially compliant''
+navigation, however, is not a single behaviour. Facing an oncoming pedestrian, one user wants the robot to slow down and let them pass,
+another wants it to keep pace; one prefers it to pass behind people, another in front; one tolerates a wide detour around a group, another
+wants the shortest safe path. People themselves differ in how close they pass others and how readily they give way
+\todo{cite proxemics / individual differences in pedestrian behaviour}, so a single notion of good crowd behaviour leaves many users
+dissatisfied.
 
-People share sidewalks, stations and shopping streets with a growing number of robots, and how such a robot moves through a crowd
-matters to the person it serves. Yet ``socially compliant'' navigation is not a single behaviour: one user wants the robot to slow
-down and let others pass, another wants it to keep pace; one prefers it to pass behind pedestrians, another in front.
-\todo{finish paragraph}
+Crowd-navigation methods nonetheless optimize one fixed objective. Model-based planners encode hand-tuned social costs, reinforcement-learning
+policies maximize a designed reward, and imitation or generative planners reproduce the average pedestrian of their training data
+\todo{cite social force, ORCA, RL crowd navigation, generative planners}. Adapting any of them to an individual requires retuning or
+retraining. Preference-based learning offers a direct route: instead of specifying a reward, the user compares two behaviours and the robot
+infers what they want~\citep{christiano2017deep,sadigh2017active}. In robotics, however, each comparison costs the user time and attention,
+so a preference must be identified from a handful of answers, and the trajectories being compared must be meaningful to a person: safe,
+plausible, and different in ways the user cares about.
+
+Our key idea is to separate \emph{what} the robot can do from \emph{which} of those behaviours a particular user wants.
+For the first, we learn a discrete codebook of human walking behaviours with a VQ-VAE~\citep{vandenoord2017neural} trained on pedestrian
+trajectories. Decoding the codebook in a given situation yields a small set of candidate paths that are human-like by construction and
+differ in style -- passing left or right, ahead or behind, slowing down or keeping pace -- and a safety filter removes the ones that come too
+close to anyone. For the second, we describe each safe candidate by five interpretable style features and model the user's preference as a
+linear utility over them, learned with a Bayesian Bradley--Terry model~\citep{bradley1952rank} from A/B answers. Because the robot only
+executes one path per situation after querying, the relevant objective is simple regret, and we choose each question by the expected utility
+of the best option (EUBO)~\citep{astudillo2023qeubo}, which is one-step Bayes-optimal for it.
+
+The data prior alone does not capture individual preferences: on held-out situations from Grand Central and ETH/UCY, always taking the most
+human-like safe path leaves a normalized simple regret of 0.45--0.47 for simulated users, close to a random safe path (0.49). Five EUBO
+queries reduce it to 0.09--0.12, with lower regret than random questions in all four settings and than an active-query baseline in three.
+The comparison with Direct Preference Optimization~\citep{rafailov2023direct}, the estimator behind much of current preference fine-tuning,
+shows where the gain comes from: given the same questions, DPO and the Bradley--Terry posterior perform alike, but DPO has no posterior with
+which to choose its questions. The candidate set matters as well: on shared Grand Central scenes, the candidates of a flow-matching
+crowd-navigation planner \todo{cite} cover a much narrower range of behaviours than the codebook, which bounds what any learned preference
+can achieve (union regret 0.35 vs 0.11 after five queries). Finally, in a closed-loop replay, following the learned preference keeps the
+user's step regret at 0.10--0.14 without a significant change in collision rate.
 
 \paragraph{Contributions.}
 \begin{itemize}
   \item A walking-behaviour codebook learned with a VQ-VAE from pedestrian trajectories, which turns a situation into a small set of
         diverse, human-like candidate paths that a safety filter can check (Sec.~\ref{sec:candidates}).
   \item A linear preference over five interpretable style features, learned with a Bayesian Bradley--Terry model from A/B answers,
-        with queries chosen by EUBO (Sec.~\ref{sec:preference}).
+        with questions chosen by EUBO to minimize simple regret (Sec.~\ref{sec:preference}).
   \item A simple-regret evaluation protocol on held-out situations (Sec.~\ref{sec:regret}) and experiments on Grand Central and
-        ETH/UCY: query selection, a DPO estimator, a flow-matching candidate generator, and a closed-loop replay (Sec.~\ref{sec:experiments}).
+        ETH/UCY that compare query selection, a DPO estimator, a flow-matching candidate generator, and closed-loop execution
+        (Sec.~\ref{sec:experiments}).
 \end{itemize}
