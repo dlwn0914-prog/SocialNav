@@ -1,0 +1,74 @@
+% Same text as reports/method_regret.tex (11/18 feedback item 4); edit here from now on.
+% TODO: the "Setting" and "Recommendation" paragraphs below repeat Sec. 3; trim when merging.
+\subsection{Evaluation: simple regret}
+\label{sec:regret}
+
+\paragraph{Setting.}
+A situation $s$ offers a finite candidate set $\mathcal{K}$ (the codebook paths).
+The safety filter keeps
+\begin{equation}
+  \mathcal{C}(s) = \bigl\{ k \in \mathcal{K} \;:\; d_{\min}(s,k) \ge c,\;
+  \mathrm{prog}(s,k) \ge \rho \max_{k'} \mathrm{prog}(s,k') \bigr\},
+\end{equation}
+with clearance $c = 0.5$\,m and $\rho = 0.5$; only situations with $|\mathcal{C}(s)| \ge 4$ are used.
+Each safe candidate has normalized style features $\phi(s,k) \in \mathbb{R}^d$
+(side, front, yield, detour, human; $d=5$).
+A user is a unit vector $\theta^\ast$ ($\lVert\theta^\ast\rVert = 1$) with utility
+$u^\ast(s,k) = \theta^{\ast\top}\phi(s,k)$, and answers a query $(i,j)$ in a query situation with
+$P(i \succ j) = \sigma\bigl(\beta\,(u^\ast(s,i) - u^\ast(s,j))\bigr)$, $\beta = 5$.
+
+\paragraph{Recommendation.}
+After $n$ answered queries a method returns an estimate $\hat\theta_n$
+(the Laplace posterior mean for Bradley--Terry methods, the DPO solution for DPO)
+and, in any situation, executes
+\begin{equation}
+  \hat k_n(s) = \operatorname*{arg\,max}_{k \in \mathcal{C}(s)} \hat\theta_n^{\top}\phi(s,k).
+\end{equation}
+
+\paragraph{Simple regret.}
+The regret of that choice is the utility lost against the user's best safe candidate,
+normalized by the utility range of the situation so that situations are comparable:
+\begin{equation}
+  r_n(s) = \frac{\max_{k \in \mathcal{C}(s)} u^\ast(s,k) \;-\; u^\ast\bigl(s,\hat k_n(s)\bigr)}
+                {\max_{k \in \mathcal{C}(s)} u^\ast(s,k) \;-\; \min_{k \in \mathcal{C}(s)} u^\ast(s,k)}
+  \;\in [0,1].
+  \label{eq:regret}
+\end{equation}
+The reported number is its expectation over users and held-out test situations,
+\begin{equation}
+  \mathrm{SR}_n = \mathbb{E}_{\theta^\ast}\Bigl[\frac{1}{|\mathcal{S}_{\text{test}}|}
+  \sum_{s \in \mathcal{S}_{\text{test}}} r_n(s)\Bigr],
+  \label{eq:sr}
+\end{equation}
+estimated with 200 synthetic users per setting, 10 query situations and 20 test situations per user,
+drawn from disjoint sets ($\mathcal{S}_{\text{query}} \cap \mathcal{S}_{\text{test}} = \emptyset$;
+answers are only collected in $\mathcal{S}_{\text{query}}$).
+Confidence intervals are 95\% bootstraps over users.
+$\mathrm{SR}_n = 0$ for the oracle ($\hat\theta = \theta^\ast$);
+a uniformly random safe candidate gives $\mathrm{SR} \approx 0.5$.
+
+\paragraph{Why simple regret.}
+Queries cost the user's attention but no driving utility, and what matters is the path the robot
+executes afterwards. The objective is therefore best-arm identification (simple regret) rather
+than cumulative regret over the queries. EUBO~\cite{astudillo2023qeubo} is one-step Bayes-optimal
+for exactly this objective under noise-free answers, which motivates its use.
+Fig.~\ref{fig:regret} plots $\mathrm{SR}_n$ against the number of queries $n \in \{0,2,5,10,20\}$.
+
+\paragraph{Variants used elsewhere.}
+\emph{Closed loop:} at every 0.8\,s re-planning step $t$ of a drive, Eq.~\eqref{eq:regret} is evaluated
+on that step's safe set $\mathcal{C}(s_t)$ and averaged over the steps of the episode (step regret).
+\emph{Candidate generators:} to compare two generators $A$ and $B$ on the same situation, the max and min
+in Eq.~\eqref{eq:regret} are taken over $\mathcal{C}_A(s) \cup \mathcal{C}_B(s)$ (union regret), so a generator
+whose candidates miss what the user wants is penalized even when it picks its own best;
+the per-generator regret of Eq.~\eqref{eq:regret} is not comparable across generators.
+\emph{Pilot:} with real participants $\theta^\ast$ is unknown; the measurable proxy is the share of
+held-out (test-block) answers that $\hat\theta$ predicts.
+
+% Figure (utils/plot_regret_curves.py -> reports/fig_regret.pdf)
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_regret.pdf}
+  \caption{Simple regret $\mathrm{SR}_n$ (Eq.~\ref{eq:sr}) on held-out situations against the number of
+  A/B queries. Shaded: 95\% bootstrap CI over 200 synthetic users. Dotted: human prior only; the oracle is 0. BT: Bradley--Terry (Laplace); DPO: Sec.~\ref{sec:dpo}.}
+  \label{fig:regret}
+\end{figure}

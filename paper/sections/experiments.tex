@@ -1,0 +1,76 @@
+\section{Experiments}
+\label{sec:experiments}
+
+We ask: (Q1) how quickly does each query method identify a user's style preference on situations the user was never asked about?
+(Q2) does the estimator matter, compared with DPO? (Q3) does the candidate generator matter? (Q4) does following the learned preference
+in closed loop cost reach or safety?
+
+\subsection{Setup}
+\paragraph{Data.} Grand Central~\citep{zhou2012understanding} (GC) and ETH/UCY~\citep{pellegrini2009you,lerner2007crowds}, split by person.
+Test situations are held-out pedestrians with a predicted conflict (someone passes within 1\,m in the next 8\,s at constant velocity)
+and at least four safe candidates: 12{,}159 on GC (destination $\ge$12\,s ahead) and 590 on ETH/UCY ($\ge$8\,s; Appendix~\ref{app:eth_dest}).
+\todo{numbers of training people / samples per dataset}
+
+\paragraph{Users.} Real preferences are unknown, so we use synthetic users: $\theta^\ast \sim \mathcal{N}(0,I)$ normalized
+(\emph{dense}: every style matters) or Dirichlet(0.3) magnitudes with random signs (\emph{sparse}: one or two styles dominate),
+answering with $\beta=5$ (Sec.~\ref{sec:regret}). Per user, 10 query situations and 20 test situations are drawn without overlap;
+200 users per setting; 95\% bootstrap CIs over users.
+
+\paragraph{Baselines.} \emph{Random}: uniformly random pairs. \emph{AQ}: a version-space active query that asks the current best
+against its strongest challenger. \todo{cite UserAlign} Both use the same Bradley--Terry estimator as EUBO.
+
+\subsection{Q1: Query selection}
+Table~\ref{tab:regret} and Fig.~\ref{fig:regret}. The human-data prior alone leaves a simple regret of 0.45--0.47, close to a random
+safe candidate (0.49): the most typical path is not what a given user prefers. Five EUBO queries reduce it to 0.09--0.12 and twenty to
+0.03--0.07. With five queries EUBO has lower regret than random queries in all four settings ($-$0.037 to $-$0.061) and than AQ in three
+of four ($-$0.021 to $-$0.026; GC dense $-$0.016, n.s.). The gap closes with more queries (20 queries: Table~\ref{tab:regret}, parentheses).
+Pairwise agreement shows the same ordering (Appendix, Table~\ref{tab:agreement}).
+
+\input{tables/regret}
+
+\subsection{Q2: Estimator -- DPO}
+\label{sec:dpo}
+DPO~\citep{rafailov2023direct} fits a policy $\pi_\theta(k \mid s) \propto \exp(\theta^\top\phi(s,k))$ to the answered pairs with the
+human prior as the reference policy. Because the \emph{human} feature is the standardized log-prior, the reference lies in the same family
+($\theta_{\text{ref}} = \sigma_{\text{human}} e_{\text{human}}$) and the DPO loss becomes
+$-\log\sigma\bigl(\beta_{\text{DPO}}(\theta - \theta_{\text{ref}})^\top(\phi_w - \phi_l)\bigr)$: a Bradley--Terry likelihood anchored at the
+prior, without a posterior. We minimize it by 1{,}000 steps of gradient descent from $\theta_{\text{ref}}$ with $\beta_{\text{DPO}}=0.3$,
+the best of ten $(\beta_{\text{DPO}}, \text{steps})$ settings on GC dense (tuned on the evaluation setting, which favours DPO).
+Without a posterior DPO cannot choose its questions, so it uses random pairs; \emph{DPO + EUBO queries} receives the pairs EUBO picks.
+
+With the same random questions, DPO and Bradley--Terry are close after five queries and DPO is slightly worse after twenty
+(agreement $-$0.005 to $-$0.016). EUBO has lower regret than DPO in all settings ($-$0.028 to $-$0.056 at five queries).
+Given EUBO's questions, DPO comes within 0.011 of EUBO: most of the gain comes from choosing the questions, not from the estimator.
+
+\subsection{Q3: Candidate generator}
+Table~\ref{tab:generator}. We compare the codebook with the candidates of a flow-matching crowd-navigation planner
+\todo{name + cite Crowd-FM; 20 samples refined by PRIEST \todo{cite}} on the 900 GC scenes for which those candidates exist
+(150 people $\times$ 6 frames; 811 where both generators have $\ge$4 safe candidates). To make the comparison fair, both are evaluated on
+the planner's 3\,s horizon with the people it was given, the same safety filter, and the four features that both can compute
+(\emph{human} needs the codebook prior). Because regret normalized within each generator's own set rewards narrow sets, we report
+\emph{union regret}, normalized over both generators' safe candidates.
+
+Codebook candidates span a wider range of behaviours (median lateral spread at 3\,s: 2.55\,m vs 0.50\,m). Even an oracle that knows
+$\theta^\ast$ cannot get the flow-matching candidates below 0.29--0.32 union regret, against 0.06--0.07 for the codebook. With five EUBO
+queries the codebook reaches 0.11 (dense) / 0.15 (sparse) against 0.35 / 0.35. The query-method effect is similar for both generators
+(EUBO $-$ random: $-$0.03 to $-$0.05). Restricting to users who dislike detours ($\theta_{\text{detour}}<0$), which removes the users
+who favour wide candidate sets by construction, narrows the gap (0.13 vs 0.20 dense) but does not close it.
+
+\input{tables/generator}
+
+\subsection{Q4: Closed-loop replay}
+Table~\ref{tab:closed_loop}. A held-out pedestrian is replaced by the robot, which re-plans every 0.8\,s from the codebook, executes
+the first step and must reach the pedestrian's final position; everyone else is replayed and does not react. When no candidate is safe
+at cruise speed the robot tries the same paths at half speed and then standing still; the straight final approach is checked the same way.
+Following the preference learned from five queries reduces the step regret from about 0.5 to 0.10--0.14 without a significant change in
+collision rate; reach drops by 1.7--4.4 points (significant in two of four settings).
+Robot-caused collisions remain above the recorded pedestrian's on GC (0.41--0.45 vs 0.21) for every policy including the oracle;
+on ETH/UCY the safety-checked approach brings them close for the prior and five-query policies (0.25--0.28 vs 0.24). Most remaining GC collisions occur on steps where a
+candidate judged safe under constant-velocity prediction was followed, i.e.\ they come from the prediction model, not from the preference.
+
+\input{tables/closed_loop}
+
+\subsection{Pilot with real participants}
+\todo{If responses are collected before submission: pilot v3 (20 questions; 10 train shown first, 8 test, 2 repeated with sides swapped);
+report held-out answer accuracy of the personal $\theta$ vs a shared $\theta$ and the human prior (utils/analyze_pilot.py).
+Otherwise move to Limitations. Do not claim IRB exemption unless confirmed.}

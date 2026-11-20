@@ -1,0 +1,16 @@
+\section{Limitations}
+\label{sec:limitations}
+
+\paragraph{Synthetic users.} All quantitative results use synthetic users whose answers follow the same Bradley--Terry model the
+estimator assumes, which favours model-based estimators; whether real people's walking-style preferences are linear in these features,
+stable, and different from each other is for a user study to show. \todo{pilot status}
+
+\paragraph{Linear features.} The five features are hand-designed and evaluated at one conflict person; group-related preferences
+(cutting through a queue or a conversation) need further features.
+
+\paragraph{Closed loop.} Pedestrians are replayed and do not react to the robot; perception is perfect; the robot is a point with no
+dynamics. Robot-caused collisions on GC stay above the recorded pedestrian's for every policy, including the oracle, because the safety
+filter relies on constant-velocity prediction. A learned or uncertainty-aware predictor and reactive pedestrians are future work.
+
+\paragraph{Generator comparison.} The flow-matching candidates were available on 900 GC scenes only (3\,s horizon, people in the planner's
+window), so the comparison uses that horizon, those people and four features.

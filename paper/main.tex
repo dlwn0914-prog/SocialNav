@@ -1,0 +1,36 @@
+% Manuscript skeleton for the 11/25 OpenReview submission.
+% Build: pdflatex main && bibtex main && pdflatex main && pdflatex main (no LaTeX on the lab server; use Overleaf).
+% Every number is traceable to a results file: see README.md. "TODO" marks text still to write or verify.
+\documentclass[10pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage[numbers]{natbib}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+
+\title{Learning Individual Walking-Style Preferences for Crowd Navigation\\from a Few Pairwise Queries}
+\author{Anonymous}
+\date{}
+
+\begin{document}
+\maketitle
+
+\input{sections/abstract}
+\input{sections/intro}
+\input{sections/related}
+\input{sections/method}
+\input{sections/experiments}
+\input{sections/limitations}
+\input{sections/conclusion}
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\appendix
+\input{sections/appendix}
+
+\end{document}

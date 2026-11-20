@@ -1,0 +1,23 @@
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{Crowd navigation.}
+% Model-based (social force, ORCA), learned (RL, imitation), generative planners (diffusion / flow matching).
+% Point: they optimize one fixed notion of social compliance.
+\todo{write; cite social force, ORCA, CADRL/SARL-type RL, and the flow-matching planner used as our baseline generator}
+
+\paragraph{Learning from pairwise preferences.}
+Pairwise comparisons are commonly modelled with the Bradley--Terry model~\citep{bradley1952rank}. Preference-based reward learning
+was scaled up with deep networks by \citet{christiano2017deep} and became the basis of RLHF for language models~\citep{ouyang2022training}.
+Direct Preference Optimization~\citep{rafailov2023direct} removes the separate reward model and fits the policy to the preference pairs
+directly, with a KL anchor to a reference policy; we use it as an estimator baseline.
+\todo{2--3 sentences on how this differs from our setting: few answers per user, choice among a small safe set}
+
+\paragraph{Active preference queries in robotics.}
+\citet{sadigh2017active} select trajectory comparisons that maximize information about a linear reward.
+EUBO~\citep{astudillo2023qeubo} asks the pair maximizing the expected utility of the better option and is one-step Bayes-optimal for
+simple regret; we adopt it because our objective is the one path executed after querying.
+\todo{cite the active-query (version-space) baseline (UserAlign) once the reference is confirmed}
+
+\paragraph{Discrete behaviour representations.}
+VQ-VAEs~\citep{vandenoord2017neural} learn a discrete codebook; \todo{cite trajectory/motion codebook works (motion primitives, VQ for trajectory prediction)}.

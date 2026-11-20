@@ -1,0 +1,46 @@
+\section{Method}
+\label{sec:method}
+
+% Fig. 1 (pipeline) \todo{draw: situation -> codebook candidates -> safety filter -> style features -> A/B queries (EUBO) -> theta -> executed path}
+
+\subsection{Problem setting}
+In a situation $s$ the robot knows its own state (speed, two past positions), its destination and the positions and velocities of
+nearby people. A user has a preference over how the robot walks, which we model as a linear utility over style features.
+The user answers a small number of A/B questions in a few query situations; the robot must then choose its path in new situations
+the user was never asked about.
+
+\subsection{Walking-behaviour codebook}
+\label{sec:candidates}
+A VQ-VAE~\citep{vandenoord2017neural} with $K=16$ codes is trained on pedestrian futures expressed in the heading frame as deviations
+from constant velocity (6 points every 0.8\,s, 4.8\,s). Decoding every code from the robot's current speed gives $K$ candidate paths.
+A prior network $p(\text{code} \mid s)$, trained on the same data with the destination and a summary of nearby people as input,
+scores how typical each candidate is for a person in that situation.
+\todo{training details: data split by person, epochs, prior inputs; GC: 12,159 test conflict situations; ETH/UCY: 590}
+
+\paragraph{Safety filter.}
+People are extrapolated at constant velocity; a candidate is safe if its minimum distance to everyone is at least $c=0.5$\,m and its
+progress towards the destination is at least $\rho=0.5$ times the best candidate's. The preference only chooses among safe candidates:
+\begin{equation}
+  \mathcal{C}(s) = \bigl\{ k \;:\; d_{\min}(s,k) \ge c,\; \mathrm{prog}(s,k) \ge \rho \max_{k'} \mathrm{prog}(s,k') \bigr\}.
+\end{equation}
+
+\subsection{Style features}
+Each safe candidate is described by $\phi(s,k) \in \mathbb{R}^5$, none of which has an a-priori right sign:
+\emph{side} ($\tanh$ of the lateral offset from the conflict person at closest approach),
+\emph{front} (crossing ahead of or behind them), \emph{yield} (mean speed relative to the current speed),
+\emph{detour} (largest deviation from the straight line to the destination) and \emph{human} ($\log p(\text{code}\mid s)$).
+Features are standardized over the safe candidates of the query situations.
+
+\subsection{Preference learning and query selection}
+\label{sec:preference}
+The user's utility is $u(s,k) = \theta^\top \phi(s,k)$. Answers follow the Bradley--Terry model~\citep{bradley1952rank}
+$P(i \succ j \mid \theta) = \sigma(\theta^\top(\phi_i - \phi_j))$ with prior $\theta \sim \mathcal{N}(0, I)$; the posterior is
+approximated by a Laplace approximation (Newton's method for the MAP, inverse Hessian as covariance).
+Each query asks the pair maximizing the expected utility of the best option~\citep{astudillo2023qeubo},
+\begin{equation}
+  (i,j) = \operatorname*{arg\,max}_{i \ne j} \; \mathbb{E}_{\theta \sim p(\theta \mid \mathcal{D})}\bigl[\max\{u_i, u_j\}\bigr],
+\end{equation}
+estimated with 512 posterior samples. At test time the robot executes
+$\hat k_n(s) = \arg\max_{k \in \mathcal{C}(s)} \hat\theta_n^\top \phi(s,k)$ with $\hat\theta_n$ the posterior mean after $n$ answers.
+
+\input{sections/regret}
