@@ -6,12 +6,12 @@ the person it serves -- the user who sends a delivery robot, rides in a wheelcha
 navigation, however, is not a single behaviour. Facing an oncoming pedestrian, one user wants the robot to slow down and let them pass,
 another wants it to keep pace; one prefers it to pass behind people, another in front; one tolerates a wide detour around a group, another
 wants the shortest safe path. People themselves differ in how close they pass others and how readily they give way
-\todo{cite proxemics / individual differences in pedestrian behaviour}, so a single notion of good crowd behaviour leaves many users
+\citep{hall1966hidden}, so a single notion of good crowd behaviour leaves many users
 dissatisfied.
 
 Crowd-navigation methods nonetheless optimize one fixed objective. Model-based planners encode hand-tuned social costs, reinforcement-learning
 policies maximize a designed reward, and imitation or generative planners reproduce the average pedestrian of their training data
-\todo{cite social force, ORCA, RL crowd navigation, generative planners}. Adapting any of them to an individual requires retuning or
+\citep{helbing1995social,vandenberg2011reciprocal,chen2019crowd,kretzschmar2016socially,mavrogiannis2023core}. Adapting any of them to an individual requires retuning or
 retraining. Preference-based learning offers a direct route: instead of specifying a reward, the user compares two behaviours and the robot
 infers what they want~\citep{christiano2017deep,sadigh2017active}. In robotics, however, each comparison costs the user time and attention,
 so a preference must be identified from a handful of answers, and the trajectories being compared must be meaningful to a person: safe,

@@ -2,16 +2,28 @@
 \label{sec:related}
 
 \paragraph{Crowd navigation.}
-% Model-based (social force, ORCA), learned (RL, imitation), generative planners (diffusion / flow matching).
-% Point: they optimize one fixed notion of social compliance.
-\todo{write; cite social force, ORCA, CADRL/SARL-type RL, and the flow-matching planner used as our baseline generator}
+Robot navigation among people has been surveyed from the human-aware~\citep{kruse2013human} and the social-navigation
+perspective~\citep{mavrogiannis2023core}. Model-based methods treat pedestrians as particles under attractive and repulsive
+forces~\citep{helbing1995social} or as agents that share the responsibility for avoiding each other~\citep{vandenberg2011reciprocal},
+and interaction-aware planners predict the crowd and the robot jointly to avoid the freezing-robot problem~\citep{trautman2010unfreezing}.
+Learning-based methods train collision-avoidance policies with deep reinforcement learning~\citep{chen2017decentralized}, add social norms
+such as passing on one side to the reward~\citep{chen2017socially}, model crowd--robot interaction with attention~\citep{chen2019crowd},
+or recover a navigation cost from human demonstrations with inverse reinforcement learning~\citep{kretzschmar2016socially}.
+Pedestrian trajectory prediction~\citep{alahi2016social,gupta2018social} and generative planners based on diffusion~\citep{janner2022planning}
+or flow matching~\citep{lipman2023flow} provide multimodal samples of plausible motion; the flow-matching crowd-navigation planner we compare
+against as a candidate generator \todo{cite Crowd-FM} draws such samples and refines them with \todo{cite PRIEST}.
+All of these encode one notion of social compliance, fixed by hand-tuned costs, a designed reward or the average of the training data;
+a different user's preference requires retuning or retraining. We keep the generative part, a codebook learned from pedestrian data,
+but leave the choice among its safe candidates to a preference identified from the individual user.
 
 \paragraph{Learning from pairwise preferences.}
 Pairwise comparisons are commonly modelled with the Bradley--Terry model~\citep{bradley1952rank}. Preference-based reward learning
 was scaled up with deep networks by \citet{christiano2017deep} and became the basis of RLHF for language models~\citep{ouyang2022training}.
 Direct Preference Optimization~\citep{rafailov2023direct} removes the separate reward model and fits the policy to the preference pairs
 directly, with a KL anchor to a reference policy; we use it as an estimator baseline.
-\todo{2--3 sentences on how this differs from our setting: few answers per user, choice among a small safe set}
+These methods learn from large pooled datasets of comparisons and fine-tune a high-capacity policy. Our setting is the opposite:
+a single user provides a handful of answers, and the learned preference only has to rank a small set of safe candidates in each new
+situation, which makes a low-dimensional Bayesian model and the choice of questions the deciding factors.
 
 \paragraph{Active preference queries in robotics.}
 \citet{sadigh2017active} select trajectory comparisons that maximize information about a linear reward.
