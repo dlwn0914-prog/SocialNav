@@ -1,0 +1,341 @@
+<title>걷기 스타일 선호 연구 현황</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (900px), numbered report sections, tables scroll inside their own box. Same tokens as the 11/18 report. */
+:root { --bg:#f6f7f5; --surface:#ffffff; --fg:#17221e; --muted:#55625c; --rule:#d6ddd8; --tint:#eaf0ec;
+  --accent:#1f7a55; --warm:#b4532a; --code:#e7ece8; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#121815; --surface:#1a221e; --fg:#e3e9e5; --muted:#9fb0a7; --rule:#2e3a34; --tint:#1f2a25;
+  --accent:#5cc796; --warm:#e88b5f; --code:#26312c; color-scheme:dark } }
+:root[data-theme="dark"] { --bg:#121815; --surface:#1a221e; --fg:#e3e9e5; --muted:#9fb0a7; --rule:#2e3a34; --tint:#1f2a25;
+  --accent:#5cc796; --warm:#e88b5f; --code:#26312c; color-scheme:dark }
+body { background:var(--bg); color:var(--fg); font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  font-size:15px; line-height:1.7; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); }
+main { max-width:900px; margin:0 auto; padding-block:40px 72px; }
+main > * { min-width:0; }
+h1 { font-size:1.75rem; line-height:1.3; margin:0 0 6px; text-wrap:balance; }
+.meta { color:var(--muted); font-size:.85rem; margin-bottom:22px; }
+.lead { font-size:1rem; border-left:4px solid var(--accent); background:var(--surface); padding:14px 18px; margin:0 0 28px; border-radius:0 8px 8px 0; }
+h2 { font-size:1.25rem; margin:40px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--rule); text-wrap:balance; }
+h3 { font-size:1.02rem; margin:22px 0 6px; }
+p { margin:0 0 10px; max-width:72ch; }
+ul, ol { margin:0 0 12px; padding-left:22px; } li { margin-bottom:4px; }
+.tw { overflow-x:auto; margin:6px 0 14px; }
+table { border-collapse:collapse; width:100%; font-size:.88rem; background:var(--surface); min-width:560px; }
+th, td { border-bottom:1px solid var(--rule); padding:7px 9px; text-align:left; vertical-align:top; }
+th { background:var(--tint); font-weight:600; }
+td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+tr.hl td { font-weight:700; }
+td.ok, span.ok { color:var(--accent); font-weight:700; } td.bad, span.bad { color:var(--warm); font-weight:700; }
+code { font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.82em; background:var(--code); padding:1px 4px; border-radius:3px; overflow-wrap:anywhere; }
+.note { color:var(--muted); font-size:.84rem; }
+figure { margin:10px 0 18px; }
+figure img { width:100%; max-width:100%; border-radius:6px; border:1px solid var(--rule); background:#fff; display:block; }
+figcaption { color:var(--muted); font-size:.84rem; margin-top:6px; }
+.box { background:var(--tint); border-radius:8px; padding:12px 16px; margin:10px 0 16px; }
+.box > :last-child { margin-bottom:0; }
+.grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+.grid2 > * { min-width:0; }
+nav.toc { background:var(--surface); border:1px solid var(--rule); border-radius:8px; padding:12px 18px; margin:0 0 8px; font-size:.9rem; }
+nav.toc ol { margin:0; columns:2 260px; column-gap:28px; }
+nav.toc a { color:var(--fg); text-decoration:none; } nav.toc a:hover { color:var(--accent); text-decoration:underline; }
+a { color:var(--accent); }
+.pill { display:inline-block; font-size:.76rem; font-weight:600; padding:1px 8px; border-radius:999px; border:1px solid currentColor; white-space:nowrap; }
+.pill.done { color:var(--accent); } .pill.todo { color:var(--warm); } .pill.part { color:var(--muted); }
+</style>
+<main>
+
+<h1>Learning Individual Walking-Style Preferences for Crowd Navigation</h1>
+<div class="meta">연구 현황 총정리 · 2026-11-20 기준 · 코드 SocialNav <code>main 151406c</code> (fork <code>dlwn0914-prog/SocialNav</code>) · OpenReview 제출 11/25까지 5일</div>
+
+<p class="lead">사람 보행 궤적으로 학습한 VQ-VAE 코드북이 안전하고 스타일이 다양한 후보 경로를 만들고, 사용자는 A/B 질문 몇 개에 답하며, 로봇은 EUBO로 고른 질문의 답으로 Bayesian Bradley–Terry 선호를 추정해 처음 보는 상황에서 경로를 고른다. 11/18 피드백 네 가지(파일럿 학습·테스트 분리, 문항 축소, DPO 비교, regret 정식 정의)와 추가 요청(Crowd-FM 후보 생성기 비교)을 모두 반영했다. 합성 사용자 기준으로 질문 5개면 regret이 0.45–0.47(사람 데이터 prior)에서 0.09–0.12로 내려가고, DPO보다 낮으며, 이득의 대부분은 질문 선택에서 나온다. 같은 장면에서 코드북 후보는 Crowd-FM 후보보다 regret이 0.20–0.26 낮다. 남은 큰 일은 원고 완성과 실제 사람 파일럿이다.</p>
+
+<nav class="toc" aria-label="목차"><ol>
+<li><a href="#status">한눈에 보는 상태</a></li>
+<li><a href="#method">방법 요약</a></li>
+<li><a href="#feedback">11/18 피드백 대응</a></li>
+<li><a href="#regret">regret 정식 정의</a></li>
+<li><a href="#main">본 결과: 질문 방법과 DPO</a></li>
+<li><a href="#dpo">DPO 비교 해석</a></li>
+<li><a href="#generator">후보 생성기: Crowd-FM vs VQ-VAE</a></li>
+<li><a href="#closed">2D 폐루프</a></li>
+<li><a href="#pilot">실제 사람 파일럿 (v3)</a></li>
+<li><a href="#dest">목적지 표시와 민감도</a></li>
+<li><a href="#paper">원고 상태</a></li>
+<li><a href="#claims">주장할 수 있는 것과 없는 것</a></li>
+<li><a href="#todo">남은 일과 일정</a></li>
+<li><a href="#where">코드·결과 위치와 커밋</a></li>
+</ol></nav>
+
+<h2 id="status">1. 한눈에 보는 상태</h2>
+<div class="tw"><table>
+<tr><th style="width:26%">항목</th><th style="width:14%">상태</th><th>내용</th></tr>
+<tr><td>본 벤치마크 (GC, ETH/UCY)</td><td><span class="pill done">완료</span></td><td>Random / AQ / EUBO / DPO / DPO+EUBO 질문, 설정 4개 × 사용자 200명. 기존 본 표 수치 그대로 재현</td></tr>
+<tr><td>DPO baseline</td><td><span class="pill done">완료</span></td><td>4개 설정 모두에서 EUBO가 유의하게 낮은 regret (6절)</td></tr>
+<tr><td>Crowd-FM vs VQ-VAE</td><td><span class="pill done">완료</span></td><td>GC 811장면, 2×3 비교, 합집합 regret (7절). ETH는 Crowd-FM 후보가 없어 미실시</td></tr>
+<tr><td>regret 정식 정의 + 곡선</td><td><span class="pill done">완료</span></td><td><code>paper/sections/regret.tex</code>, 그림 <code>paper/figures/fig_regret.pdf</code></td></tr>
+<tr><td>2D 폐루프</td><td><span class="pill done">완료</span></td><td>GC 300 / ETH 114 에피소드, 감속·정지 후보와 목표 근처 안전 확인 추가, 충돌 원인 분석 (8절)</td></tr>
+<tr><td>파일럿 v3 (20문항)</td><td><span class="pill part">배포, 응답 0</span></td><td>링크는 v3으로 교체됨. 비공개 상태라 공유를 열어야 참가자가 들어올 수 있음. IRB 미확인</td></tr>
+<tr><td>원고 (LaTeX)</td><td><span class="pill part">뼈대 + 일부 본문</span></td><td>초록·서론·방법·실험·한계·결론 초안, 표 4개 자동 생성. 관련 연구 일부·참고문헌·그림 1 남음</td></tr>
+<tr><td>서버 GPU</td><td><span class="pill todo">문제</span></td><td>드라이버(커널 580.173)와 라이브러리(580.178) 버전 불일치로 <code>nvidia-smi</code> 실패. 재부팅 필요(공용 서버라 관리자 조율)</td></tr>
+</table></div>
+
+<h2 id="method">2. 방법 요약</h2>
+<div class="tw"><table>
+<tr><th style="width:22%">단계</th><th>내용</th></tr>
+<tr><td>후보 생성</td><td>VQ-VAE 코드북 K=16. 보행자 미래 궤적을 진행 방향 기준 등속 대비 편차로 표현(0.8초 간격 6점, 4.8초). 현재 속도에서 16개 코드를 모두 디코딩해 후보 16개</td></tr>
+<tr><td>사람다움 prior</td><td>p(코드 | 상황): 속도, 과거 2점, 목적지(트랙 끝, 12초 이상 앞), 주변 사람 요약 8개를 입력으로 학습</td></tr>
+<tr><td>안전 필터</td><td>사람 등속 예측과의 최소 거리 ≥ 0.5 m, 목적지 진행 ≥ 최선 후보의 0.5배. 안전 후보 4개 이상인 상황만 사용</td></tr>
+<tr><td>스타일 특징 (5개)</td><td>side(충돌 상대의 어느 쪽), front(앞/뒤), yield(속도 비율), detour(목적지 직선에서 벗어난 최대 거리), human(log prior). 정답 부호가 정해지지 않은 특징만 사용</td></tr>
+<tr><td>선호 학습</td><td>u = θᵀφ, Bradley–Terry 응답 모델, 사전분포 N(0, I), Laplace 근사 사후분포</td></tr>
+<tr><td>질문 선택</td><td>EUBO: E[max(u<sub>i</sub>, u<sub>j</sub>)]가 최대인 쌍. 실행 경로가 하나라 simple regret이 목표이고, EUBO는 이에 대해 한 단계 Bayes 최적</td></tr>
+<tr><td>평가</td><td>합성 사용자 θ* (dense: N(0, I) 정규화, sparse: Dirichlet(0.3) 크기 + 무작위 부호), 응답 P = σ(5·Δu). 사용자마다 질문 상황 10개, 테스트 상황 20개(겹치지 않음)</td></tr>
+</table></div>
+<p class="note">11/4–11/16 사이의 재설계 과정(코드북 도입, 목적지 누수 수정, 일치율 본 결과, 파일럿 v1→v2)은 이전 보고서 <a href="https://claude.ai/artifact/BA3DuTm8BXZFqgYHCFuLDp">11/4 이후 변경 총정리</a>에 있다.</p>
+
+<h2 id="feedback">3. 11/18 피드백 대응</h2>
+<div class="tw"><table>
+<tr><th style="width:4%">#</th><th style="width:28%">피드백</th><th style="width:40%">한 것</th><th>결과</th></tr>
+<tr><td>1</td><td>파일럿 학습/테스트 분리 (앞 절반 학습, 뒷 절반 테스트)</td><td>v3: 학습 10문항 블록을 모두 보여 준 뒤 테스트 블록. 응답 순번 <code>n</code> 기록, 분석에서 <code>order_ok</code> 확인. 학습·테스트를 섞던 leave-one-out(<code>personal_cv</code>) 삭제</td><td>헤드리스 브라우저로 순서 확인: 모든 참가자에서 앞 10개가 학습 문항</td></tr>
+<tr><td>2</td><td>문항 수 축소 (60 → 15–20)</td><td>20문항: 학습 10(정보량 기준 선택) + 테스트 8 + 반복 2. 축소 효과를 가상 사용자 2000명으로 측정</td><td>일치율 0.928 → 0.876(dense), 0.865 → 0.792(sparse). 무작위 10문항보다 1–4%p 높음 (9절)</td></tr>
+<tr><td>3</td><td>DPO baseline</td><td>DPO 손실로 θ 추정(참조 정책 = 사람 prior). 무작위 질문판과 EUBO 질문판 두 가지</td><td>EUBO가 4개 설정 모두 유의하게 낮음. 같은 질문이면 거의 같음 (5–6절)</td></tr>
+<tr><td>4</td><td>regret 정식 정의</td><td>Method 절에 simple regret 수식, 평가 프로토콜, 변형(폐루프·생성기·파일럿) 정의. 곡선 그림 연결</td><td><code>paper/sections/regret.tex</code> (4절)</td></tr>
+<tr><td>+</td><td>Crowd-FM 후보 + EUBO 비교</td><td>Crowd-FM 후보가 있는 GC 장면에 코드북 후보를 생성해 같은 장면·사용자·특징으로 2×3 비교</td><td>VQ-VAE + EUBO가 Crowd-FM + EUBO보다 0.20–0.26 낮음 (7절)</td></tr>
+</table></div>
+
+<h2 id="regret">4. regret 정식 정의</h2>
+<div class="box">
+<p>안전 후보 집합 C(s), 정규화된 스타일 특징 φ(s,k), 사용자 효용 u*(s,k) = θ*ᵀφ(s,k), ‖θ*‖ = 1.</p>
+<p>질문 n개 뒤 추정치 θ̂<sub>n</sub>, 실행 경로 k̂<sub>n</sub>(s) = argmax<sub>k∈C(s)</sub> θ̂<sub>n</sub>ᵀφ(s,k).</p>
+<p><b>r<sub>n</sub>(s) = [max<sub>k</sub> u*(s,k) − u*(s, k̂<sub>n</sub>(s))] / [max<sub>k</sub> u*(s,k) − min<sub>k</sub> u*(s,k)] ∈ [0, 1]</b></p>
+<p><b>SR<sub>n</sub> = E<sub>θ*</sub>[ (1/|S<sub>test</sub>|) Σ<sub>s∈S<sub>test</sub></sub> r<sub>n</sub>(s) ]</b>, S<sub>query</sub> ∩ S<sub>test</sub> = ∅. 정답 θ*는 0, 무작위 안전 후보는 약 0.5.</p>
+</div>
+<ul>
+<li><b>왜 simple regret:</b> 질문은 주행 효용을 잃지 않고, 중요한 것은 질문 뒤 실행하는 경로 하나다. 따라서 누적 regret이 아니라 최선 선택(best-arm identification) 문제다.</li>
+<li><b>폐루프 변형 (step regret):</b> 0.8초마다 그 시점의 안전 후보로 r을 계산해 에피소드 평균.</li>
+<li><b>생성기 비교 변형 (합집합 regret):</b> max/min을 두 생성기 후보의 합집합에서 계산. 각자 정규화한 regret은 후보가 좁을수록 유리해서 생성기끼리 비교할 수 없다.</li>
+<li><b>파일럿 변형:</b> 실제 사람은 θ*를 모르므로 테스트 블록 응답을 θ̂이 맞히는 비율을 쓴다.</li>
+</ul>
+
+<h2 id="main">5. 본 결과: 질문 방법과 DPO</h2>
+<p>처음 보는 테스트 상황에서의 simple regret (낮을수록 좋음). 질문 5개, 괄호는 20개. 사용자 200명, 95% 부트스트랩.</p>
+<div class="tw"><table>
+<tr><th>방법</th><th class="n">GC dense</th><th class="n">GC sparse</th><th class="n">ETH dense</th><th class="n">ETH sparse</th></tr>
+<tr><td>무작위 안전 후보 (선호 없음)</td><td class="n">0.492</td><td class="n">0.493</td><td class="n">0.495</td><td class="n">0.490</td></tr>
+<tr><td>사람 데이터 prior만</td><td class="n">0.457</td><td class="n">0.472</td><td class="n">0.454</td><td class="n">0.469</td></tr>
+<tr><td>BT + 무작위 질문</td><td class="n">0.154 (0.044)</td><td class="n">0.178 (0.072)</td><td class="n">0.125 (0.042)</td><td class="n">0.164 (0.068)</td></tr>
+<tr><td>BT + AQ</td><td class="n">0.112 (0.041)</td><td class="n">0.144 (0.059)</td><td class="n">0.109 (0.034)</td><td class="n">0.126 (0.053)</td></tr>
+<tr><td>DPO + 무작위 질문</td><td class="n">0.144 (0.053)</td><td class="n">0.174 (0.080)</td><td class="n">0.116 (0.046)</td><td class="n">0.151 (0.081)</td></tr>
+<tr><td>DPO + EUBO 질문</td><td class="n">0.106 (0.041)</td><td class="n">0.117 (0.064)</td><td class="n">0.087 (0.032)</td><td class="n">0.114 (0.068)</td></tr>
+<tr class="hl"><td>BT + EUBO (ours)</td><td class="n">0.096 (0.031)</td><td class="n">0.118 (0.051)</td><td class="n">0.088 (0.029)</td><td class="n">0.103 (0.065)</td></tr>
+<tr><td>정답 θ*</td><td class="n">0.000</td><td class="n">0.000</td><td class="n">0.000</td><td class="n">0.000</td></tr>
+</table></div>
+<p>짝지은 차이 (질문 5개, 음수 = EUBO가 낮음, <span class="ok">초록</span> = 95% CI가 0을 포함하지 않음):</p>
+<div class="tw"><table>
+<tr><th>비교</th><th class="n">GC dense</th><th class="n">GC sparse</th><th class="n">ETH dense</th><th class="n">ETH sparse</th></tr>
+<tr><td>EUBO − 무작위</td><td class="n ok">−0.058</td><td class="n ok">−0.060</td><td class="n ok">−0.037</td><td class="n ok">−0.061</td></tr>
+<tr><td>EUBO − AQ</td><td class="n">−0.016</td><td class="n ok">−0.026</td><td class="n ok">−0.021</td><td class="n ok">−0.024</td></tr>
+<tr><td>EUBO − DPO</td><td class="n ok">−0.048</td><td class="n ok">−0.056</td><td class="n ok">−0.028</td><td class="n ok">−0.049</td></tr>
+<tr><td>EUBO − DPO+EUBO 질문</td><td class="n ok">−0.010</td><td class="n">+0.001</td><td class="n">0.000</td><td class="n ok">−0.011</td></tr>
+</table></div>
+<p>질문 20개에서는 EUBO − AQ가 ETH sparse에서 +0.012(AQ가 약간 나음, 유의)로 뒤집힌다. 질문이 많아지면 방법 간 차이는 줄어든다.</p>
+<figure><img src="{{FIG_REGRET}}" alt="네 설정에서 질문 수(0, 2, 5, 10, 20)에 따른 simple regret 곡선. 모든 방법이 0.5 부근에서 시작해 빠르게 내려가며, BT+EUBO와 DPO+EUBO 질문이 가장 낮고 BT+무작위와 DPO+무작위가 가장 높다.">
+<figcaption>질문 수에 따른 simple regret. 음영은 사용자 단위 95% 부트스트랩. 점선은 사람 prior만 쓸 때. 질문 0개는 θ̂이 없어 무작위 선택(약 0.5).</figcaption></figure>
+
+<h2 id="dpo">6. DPO 비교 해석</h2>
+<ul>
+<li><b>구현:</b> 정책 π<sub>θ</sub>(k|s) ∝ exp(θᵀφ), 참조 정책 = 사람 prior. human 특징이 표준화된 log prior라서 참조 정책이 같은 모양(θ<sub>ref</sub> = σ<sub>human</sub>·e<sub>human</sub>)이 되고, DPO 손실은 −log σ(β(θ − θ<sub>ref</sub>)ᵀ(φ<sub>w</sub> − φ<sub>l</sub>))로, prior에 묶인 Bradley–Terry 점추정이 된다(<code>src/preference/dpo.py</code>).</li>
+<li><b>하이퍼파라미터:</b> β ∈ {0.1, 0.3, 1, 3, 10} × 스텝 {100, 1000}을 GC dense 사용자 100명으로 스윕해 β=0.3, 1000스텝 선택. 평가와 같은 설정에서 골랐으므로 <b>DPO에 유리한 조건</b>이다.</li>
+<li><b>결과:</b> 4개 설정 모두 EUBO가 DPO보다 유의하게 낮다(질문 5개 −0.028 ~ −0.056, 20개 −0.016 ~ −0.029).</li>
+<li><b>원인:</b> 같은 무작위 질문이면 DPO와 BT는 5개에서 거의 같고, 20개에서 DPO가 약간 나쁘다(일치율 −0.005 ~ −0.016). 같은 EUBO 질문을 주면 차이가 0–0.013으로 사라진다. <b>이득의 대부분은 질문 선택에서 나오며</b>, DPO는 사후분포가 없어 질문을 고를 수 없다.</li>
+<li><b>ChatGPT의 "어느 답변이 더 좋나요"와의 관계:</b> 그 화면은 선호 데이터를 모으는 방식이고, 학습 알고리즘은 RLHF(보상 모델 + PPO)나 DPO 같은 것이 따로 있다. 두 방법 모두 Bradley–Terry 모델에 기반한다. 그 화면은 질문을 고르지 않는다는 점이 EUBO와 다르다.</li>
+</ul>
+
+<h2 id="generator">7. 후보 생성기: Crowd-FM vs VQ-VAE</h2>
+<h3>공정하게 맞춘 조건</h3>
+<ul>
+<li><b>장면:</b> Crowd-FM 후보가 이미 있는 GC 장면 900개(150명 × 6프레임, 후보 20개, PRIEST로 다듬은 3초 경로) 중, 두 생성기 모두 안전 후보가 4개 이상인 811개.</li>
+<li><b>시간:</b> 둘 다 앞 3초(0.6초 간격 5점)로 보간해 평가.</li>
+<li><b>사람:</b> Crowd-FM이 입력으로 받은 장면의 사람(로봇 앞 창 안)을 등속으로.</li>
+<li><b>특징:</b> side, front, yield, detour 4개. human은 Crowd-FM 후보에 정의되지 않아 제외. 정규화는 두 생성기 안전 후보를 합쳐 한 번.</li>
+<li><b>사용자:</b> 같은 사용자 200명, 같은 응답 잡음 시드. 테스트 장면은 질문 장면과 다른 사람.</li>
+</ul>
+<h3>결과 (합집합 regret, 질문 5개, 괄호는 20개)</h3>
+<div class="tw"><table>
+<tr><th>후보 + 질문</th><th class="n">dense θ*</th><th class="n">sparse θ*</th><th class="n">자기 후보 안 regret (dense, 참고)</th></tr>
+<tr><td>Crowd-FM + 무작위</td><td class="n">0.397 (0.351)</td><td class="n">0.384 (0.344)</td><td class="n">0.225</td></tr>
+<tr><td>Crowd-FM + AQ</td><td class="n">0.368 (0.336)</td><td class="n">0.354 (0.316)</td><td class="n">0.148</td></tr>
+<tr><td>Crowd-FM + EUBO</td><td class="n">0.354 (0.330)</td><td class="n">0.351 (0.318)</td><td class="n">0.111</td></tr>
+<tr><td>Crowd-FM 정답 θ* (범위 한계)</td><td class="n">0.317</td><td class="n">0.287</td><td class="n">0</td></tr>
+<tr><td>VQ-VAE + 무작위</td><td class="n">0.157 (0.085)</td><td class="n">0.205 (0.127)</td><td class="n">0.116</td></tr>
+<tr><td>VQ-VAE + AQ</td><td class="n">0.123 (0.077)</td><td class="n">0.162 (0.101)</td><td class="n">0.078</td></tr>
+<tr class="hl"><td>VQ-VAE + EUBO (ours)</td><td class="n">0.113 (0.076)</td><td class="n">0.154 (0.108)</td><td class="n">0.066</td></tr>
+<tr><td>VQ-VAE 정답 θ* (범위 한계)</td><td class="n">0.057</td><td class="n">0.068</td><td class="n">0</td></tr>
+</table></div>
+<div class="tw"><table>
+<tr><th>짝지은 차이 (질문 5개)</th><th class="n">dense</th><th class="n">sparse</th></tr>
+<tr><td>VQ-VAE+EUBO − Crowd-FM+EUBO</td><td class="n ok">−0.241</td><td class="n ok">−0.197</td></tr>
+<tr><td>Crowd-FM: EUBO − 무작위</td><td class="n ok">−0.043</td><td class="n ok">−0.032</td></tr>
+<tr><td>VQ-VAE: EUBO − 무작위</td><td class="n ok">−0.044</td><td class="n ok">−0.051</td></tr>
+<tr><td>VQ-VAE: EUBO − AQ</td><td class="n">−0.010</td><td class="n">−0.008</td></tr>
+</table></div>
+<ul>
+<li><b>원인은 후보 범위:</b> 3초 시점 좌우 폭 중앙값 Crowd-FM 0.50 m, VQ-VAE 2.55 m. 안전 후보 중앙값 Crowd-FM 20개, VQ-VAE 12개. Crowd-FM은 정답 θ*를 알아도 0.29–0.32 아래로 못 내려간다.</li>
+<li><b>질문 방법 효과는 두 생성기에서 비슷:</b> EUBO − 무작위가 −0.03 ~ −0.05.</li>
+<li><b>점검 (우회를 싫어하는 사용자만, θ<sub>detour</sub> &lt; 0):</b> 넓은 후보에 유리한 사용자를 빼도 질문 5개에서 Crowd-FM+EUBO 0.196 vs VQ-VAE+EUBO 0.134(dense), 0.233 vs 0.174(sparse). 격차는 줄지만 유지된다.</li>
+<li><b>주의:</b> 합집합 regret은 구조상 넓은 후보 세트에 유리하다. 그래서 논문에는 범위 한계(정답 θ* 행)와 자기 후보 안 regret을 함께 보고한다. ETH는 Crowd-FM 후보가 없고 GPU가 고장이라 미실시.</li>
+</ul>
+
+<h2 id="closed">8. 2D 폐루프</h2>
+<p>테스트 보행자 한 명을 로봇으로 바꾸고, 0.8초마다 코드북으로 다시 계획해 첫 구간만 실행하며 그 사람의 최종 위치까지 간다. 나머지 사람은 데이터대로 재생되고 로봇에 반응하지 않는다. 충돌 기준 0.4 m.</p>
+<h3>11/17 추가한 것</h3>
+<ul>
+<li><b>감속·정지 후보 (<code>--ladder 1,0.5,0</code>):</b> 정상 속도에 안전 후보가 없으면 같은 경로를 반속으로, 그다음 제자리 정지. 선호는 같은 속도 단계 안에서만 비교.</li>
+<li><b>목표 근처 안전 확인 (<code>--safe-terminal</code>):</b> 목표 3 m 안의 직진 구간도 안전 필터와 감속·정지 단계를 거침.</li>
+<li><b>ETH/UCY:</b> 검증+테스트 인원 85명, 한 사람당 최대 3개 시작점(4초 간격), 114 에피소드. 신뢰구간은 사람 단위.</li>
+<li><b>충돌 원인 분류:</b> 로봇 원인 충돌이 계획대로 간 구간 / 폴백 / 목표 근처 직진 중 어디서 났는지 기록.</li>
+</ul>
+<h3>최종 플래너 결과 (prior 정책 기준, 최소 거리 0.5 m)</h3>
+<div class="tw"><table>
+<tr><th>설정</th><th class="n">도달률</th><th class="n">충돌률</th><th class="n">로봇 원인 충돌</th></tr>
+<tr><td>GC 실제 보행자</td><td class="n">1.000</td><td class="n">0.313</td><td class="n">0.207</td></tr>
+<tr><td>GC 기존 플래너</td><td class="n">0.977</td><td class="n">0.590</td><td class="n">0.430</td></tr>
+<tr><td>GC + 감속·정지</td><td class="n">0.990</td><td class="n">0.593</td><td class="n">0.473</td></tr>
+<tr><td>GC + 감속·정지 + 목표 근처 확인</td><td class="n">0.987</td><td class="n">0.587</td><td class="n">0.453</td></tr>
+<tr><td>ETH 실제 보행자</td><td class="n">1.000</td><td class="n">0.325</td><td class="n">0.237</td></tr>
+<tr><td>ETH 기존 플래너</td><td class="n">0.991</td><td class="n">0.553</td><td class="n">0.351</td></tr>
+<tr><td>ETH + 감속·정지</td><td class="n">1.000</td><td class="n">0.570</td><td class="n">0.325</td></tr>
+<tr class="hl"><td>ETH + 감속·정지 + 목표 근처 확인</td><td class="n">1.000</td><td class="n">0.491</td><td class="n">0.263</td></tr>
+</table></div>
+<h3>로봇 원인 충돌이 어디서 나나</h3>
+<div class="tw"><table>
+<tr><th>구간</th><th class="n">GC (최종)</th><th class="n">ETH (감속·정지만)</th><th class="n">ETH (최종)</th></tr>
+<tr><td>계획대로 간 구간 (등속 예측 오차)</td><td class="n">0.37–0.42</td><td class="n">0.14–0.20</td><td class="n">0.12–0.20</td></tr>
+<tr><td>목표 근처 직진</td><td class="n">0.06–0.08</td><td class="n">0.14–0.23</td><td class="n">0.10–0.12</td></tr>
+<tr><td>폴백</td><td class="n">0.02–0.06</td><td class="n">0.04–0.10</td><td class="n">0.04–0.10</td></tr>
+</table></div>
+<h3>선호를 따를 때 (질문 5개 − prior, 최종 플래너)</h3>
+<div class="tw"><table>
+<tr><th>설정</th><th class="n">step regret</th><th class="n">도달률 차이</th><th class="n">충돌률 차이</th></tr>
+<tr><td>GC dense</td><td class="n">0.520 → 0.096</td><td class="n bad">−0.020</td><td class="n">−0.007</td></tr>
+<tr><td>GC sparse</td><td class="n">0.478 → 0.111</td><td class="n">−0.017</td><td class="n">+0.017</td></tr>
+<tr><td>ETH dense</td><td class="n">0.502 → 0.116</td><td class="n">−0.026</td><td class="n">−0.026</td></tr>
+<tr><td>ETH sparse</td><td class="n">0.486 → 0.135</td><td class="n bad">−0.044</td><td class="n">−0.044</td></tr>
+</table></div>
+<ul>
+<li>step regret 감소는 4개 모두 유의. 충돌률 차이는 4개 모두 유의하지 않음. 도달률은 2개 설정에서 유의하게 낮아짐(<span class="bad">주황</span>).</li>
+<li>GC의 로봇 원인 충돌은 정답 θ* 정책까지 포함해 모든 정책에서 실제 보행자보다 높다. 원인은 선호가 아니라 등속 예측에 기댄 안전 필터다.</li>
+<li>ETH 사람은 직선 거리 기준보다 1.7배 오래 걸린다(GC 1.06배). ETH에서 로봇이 사람보다 빨리 도착하는 것은 이 때문이다.</li>
+</ul>
+
+<h2 id="pilot">9. 실제 사람 파일럿 (v3)</h2>
+<div class="grid2">
+<div>
+<h3>구성</h3>
+<div class="tw"><table style="min-width:0">
+<tr><th>블록</th><th>문항</th></tr>
+<tr><td>학습 10 (먼저)</td><td>side 2(GC, 느린 보행자), front 1, yield 2(GC, 느린 보행자), detour 1, human 1, group 3(줄, 대화, 일행)</td></tr>
+<tr><td>테스트 8 (나중)</td><td>side, front, yield, detour, human 각 1, group 3</td></tr>
+<tr><td>반복 2 (나중)</td><td>학습 문항 2개를 좌우 바꿔 다시</td></tr>
+</table></div>
+<p class="note">v2 문항 중에서 칸마다 정보량(log det)을 가장 키우는 문항을 골랐다. 테스트 문항은 v2 테스트 문항에서만 뽑아 학습과 상황이 겹치지 않는다.</p>
+</div>
+<figure><img src="{{PILOT_SHOT}}" alt="파일럿 v3 질문 화면. 왼쪽 A와 오른쪽 B 두 그림에 로봇(파란 점), 사람(회색 점), 로봇 경로(파란 실선), 목적지 방향(초록 점선 화살표와 '목적지 방향 15 m+ 앞' 라벨)이 그려져 있다.">
+<figcaption>v3 질문 화면 (오프라인판 캡처). 로봇 경로는 파란 실선, 목적지 방향은 초록 점선 화살표.</figcaption></figure>
+</div>
+<h3>문항 축소 효과 (가상 사용자 2000명, v2 테스트 14문항으로 평가)</h3>
+<div class="tw"><table>
+<tr><th>학습 문항</th><th class="n">일치율 dense</th><th class="n">cos(θ̂, θ*) dense</th><th class="n">일치율 sparse</th><th class="n">cos sparse</th></tr>
+<tr><td>v2 42문항</td><td class="n">0.928</td><td class="n">0.927</td><td class="n">0.865</td><td class="n">0.905</td></tr>
+<tr class="hl"><td>v3 10문항 (정보량 기준)</td><td class="n">0.876</td><td class="n">0.816</td><td class="n">0.792</td><td class="n">0.724</td></tr>
+<tr><td>v2에서 무작위 10문항</td><td class="n">0.837</td><td class="n">0.752</td><td class="n">0.780</td><td class="n">0.681</td></tr>
+</table></div>
+<p>참가자 한 명의 측정 테스트 정확도 표준편차는 v2(14문항) 0.10–0.12, v3(8문항) 0.135–0.14. 개인별 수치는 잡음이 크고, 집단 평균으로 봐야 한다.</p>
+<h3>상태</h3>
+<ul>
+<li>링크: <a href="https://claude.ai/artifact/F4mKcyyLz1PBuma7geR987">파일럿 v3</a> (비공개, 공유를 열어야 참가자 접근 가능). 오프라인판 <code>results/codebook/pilot_v3/pilot_offline.html</code>.</li>
+<li>응답 0건. v2 시절 응답 1건(p01, 60문항 중 28개)은 임시 폴더에 백업했고 git에는 넣지 않았다. p01이 링크를 다시 열면 DB의 v2 응답은 지워진다.</li>
+<li>IRB 미확인. 확인 전에는 논문에 "면제"라고 쓰지 않는다.</li>
+</ul>
+
+<h2 id="dest">10. 목적지 표시와 민감도</h2>
+<ul>
+<li>화살표는 방향만 나타내고, 끝이 목적지가 아니다. 실제 목적지는 GC 문항 15–43 m 앞(트랙 끝), 직접 만든 장면 15–25 m 앞. 모두 화면(앞 7.5 m) 밖.</li>
+<li>페이지에 반영: "목적지는 화면 밖 멀리(15 m 이상 앞)에 있고, 화살표는 방향만 나타냅니다" 문구, 화살표 끝 라벨, 진한 긴 점선 화살표, 로봇 경로는 굵은 실선.</li>
+</ul>
+<div class="tw"><table>
+<tr><th>목적지를 바꾸면</th><th class="n">가상 사용자 답이 바뀌는 비율</th><th class="n">가장 민감한 문항</th></tr>
+<tr><td>같은 방향, 거리 4–40 m</td><td class="n">0.9% (재계산 오차 수준)</td><td class="n">17%</td></tr>
+<tr><td>방향 ±10°</td><td class="n">12.6%</td><td class="n">42%</td></tr>
+<tr><td>방향 ±20°</td><td class="n">19.5%</td><td class="n">45%</td></tr>
+<tr><td>방향 ±30°</td><td class="n">21.9%</td><td class="n">44%</td></tr>
+</table></div>
+<p>스타일 특징 중 목적지를 쓰는 것은 detour뿐이고 방향만 쓴다. 그래서 거리는 영향이 없고 방향은 크다. 목적지를 화면 안 가까운 점으로 찍으면 참가자가 "도착을 잘 하나"로 고르게 되어 스타일 선호가 효율과 섞이므로, 멀리 두고 방향만 보여 주는 지금 구조를 유지했다. human 특징(prior)은 목적지 거리도 입력으로 받지만 12초 이상 목적지로만 학습했으므로, 가까운 목적지에서는 믿기 어렵다.</p>
+
+<h2 id="paper">11. 원고 상태 (<code>paper/</code>, LaTeX)</h2>
+<div class="tw"><table>
+<tr><th style="width:30%">파일</th><th style="width:16%">상태</th><th>내용 / 남은 것</th></tr>
+<tr><td><code>sections/abstract.tex</code></td><td><span class="pill done">초안</span></td><td>regret 기준, DPO와 생성기 결과 포함</td></tr>
+<tr><td><code>sections/intro.tex</code></td><td><span class="pill done">본문</span></td><td>동기, 한계, 핵심 아이디어, 결과 요약, 기여 3개. 인용 3곳 TODO</td></tr>
+<tr><td><code>sections/related.tex</code></td><td><span class="pill part">일부</span></td><td>선호 학습·능동 질문·VQ-VAE 초안. 군중 내비게이션 문단 TODO</td></tr>
+<tr><td><code>sections/method.tex</code>, <code>regret.tex</code></td><td><span class="pill done">초안</span></td><td>코드북, 안전 필터, 특징, BT+EUBO, simple regret. 중복 문단 정리 필요</td></tr>
+<tr><td><code>sections/experiments.tex</code></td><td><span class="pill done">초안</span></td><td>Q1 질문 방법, Q2 DPO, Q3 생성기, Q4 폐루프. 파일럿 절 TODO</td></tr>
+<tr><td><code>sections/limitations.tex</code>, <code>conclusion.tex</code></td><td><span class="pill done">초안</span></td><td>합성 사용자, 선형 특징, 폐루프 단순화, 생성기 비교 조건</td></tr>
+<tr><td><code>tables/*.tex</code></td><td><span class="pill done">자동 생성</span></td><td>regret, 일치율, 생성기, 폐루프. <code>utils/make_paper_tables.py</code>로 결과 JSON에서 재생성</td></tr>
+<tr><td><code>refs.bib</code></td><td><span class="pill part">10개</span></td><td>Crowd-FM, PRIEST, UserAlign(AQ), 군중 내비게이션 정책, proxemics 인용 추가 필요</td></tr>
+<tr><td>그림 1 (개요도)</td><td><span class="pill todo">없음</span></td><td>상황 → 코드북 후보 → 안전 필터 → 특징 → A/B 질문 → θ → 실행 경로</td></tr>
+</table></div>
+<p class="note">서버에 LaTeX가 없어 컴파일은 Overleaf에서. <code>\ref</code>/<code>\label</code>, 인용 키, 중괄호 짝은 스크립트로 확인했다.</p>
+
+<h2 id="claims">12. 주장할 수 있는 것과 없는 것</h2>
+<div class="tw"><table>
+<tr><th style="width:50%">주장할 수 있음</th><th>주장하면 안 됨 / 조건 명시</th></tr>
+<tr><td>질문 5개로 처음 보는 상황의 regret이 prior 대비 크게 줄어든다 (합성 사용자)</td><td>실제 사람에서도 그렇다 (파일럿 전)</td></tr>
+<tr><td>같은 질문 수에서 EUBO가 DPO보다 낮다. 이득의 대부분은 질문 선택에서 나온다</td><td>Bradley–Terry 추정이 DPO 추정보다 우월하다 (같은 질문이면 거의 같음)</td></tr>
+<tr><td>EUBO는 무작위 질문보다 4개 설정 모두, AQ보다 3개 설정에서 낫다 (질문 5개)</td><td>EUBO가 AQ를 항상 이긴다 (GC dense 5개 비유의, ETH sparse 20개는 AQ가 나음)</td></tr>
+<tr><td>같은 GC 장면에서 코드북 후보가 Crowd-FM 후보보다 합집합 regret이 낮고, 원인은 후보 범위다</td><td>모든 데이터셋에서 그렇다 (GC만), 합집합 regret만으로 판단 (범위 한계 행을 함께)</td></tr>
+<tr><td>폐루프에서 선호를 따라도 충돌률이 유의하게 늘지 않는다</td><td>안전한 플래너다 (GC 로봇 원인 충돌이 실제 보행자의 2배)</td></tr>
+<tr><td>파일럿 데이터 수집 계획</td><td>IRB 면제 (확인 전)</td></tr>
+</table></div>
+
+<h2 id="todo">13. 남은 일과 일정 (11/25 제출)</h2>
+<div class="tw"><table>
+<tr><th style="width:8%">우선</th><th style="width:44%">일</th><th>메모</th></tr>
+<tr><td>1</td><td>관련 연구 군중 내비게이션 문단, 빠진 참고문헌</td><td>Crowd-FM, PRIEST, UserAlign 서지 확인 필요</td></tr>
+<tr><td>2</td><td>그림 1 (개요도)와 정성 예시 그림</td><td>파일럿 장면 그림 재사용 가능</td></tr>
+<tr><td>3</td><td>Overleaf 컴파일, 분량·표 배치 정리</td><td>regret.tex 중복 문단 정리</td></tr>
+<tr><td>4</td><td>파일럿: 공유 열기 → 참가자 모집 → <code>utils/analyze_pilot.py</code></td><td>IRB 확인 여부에 따라 논문 포함 결정. 못 넣으면 한계 절로</td></tr>
+<tr><td>5</td><td>초록 최종 수정 (OpenReview 입력)</td><td>파일럿 결과가 있으면 한 문장 추가</td></tr>
+<tr><td>선택</td><td>GPU 복구 후 ETH에서 Crowd-FM 비교, 불확실성 반영 안전 필터</td><td>재부팅은 관리자와 조율</td></tr>
+</table></div>
+
+<h2 id="where">14. 코드·결과 위치와 커밋</h2>
+<div class="tw"><table>
+<tr><th style="width:42%">파일</th><th>역할</th></tr>
+<tr><td><code>utils/style_preference_benchmark.py</code></td><td>본 벤치마크 (<code>--methods ...,DPO,DPO-EUBO</code>)</td></tr>
+<tr><td><code>src/preference/dpo.py</code></td><td>DPO 추정기와 질문 전략</td></tr>
+<tr><td><code>utils/generator_comparison.py</code></td><td>Crowd-FM vs VQ-VAE 비교</td></tr>
+<tr><td><code>utils/closed_loop_2d.py</code></td><td>2D 폐루프 (<code>--ladder</code>, <code>--safe-terminal</code>, <code>--dataset eth</code>)</td></tr>
+<tr><td><code>utils/build_pilot_v3.py</code>, <code>utils/pilot_size_sim.py</code>, <code>utils/analyze_pilot.py</code></td><td>파일럿 v3 문항, 축소 시뮬레이션, 응답 분석</td></tr>
+<tr><td><code>utils/make_paper_tables.py</code>, <code>utils/plot_regret_curves.py</code></td><td>논문 표와 regret 곡선</td></tr>
+<tr><td><code>results/codebook/{dpo,generator,closed_loop,pilot_v3}/</code></td><td>결과 JSON과 로그</td></tr>
+<tr><td><code>reports/results_1120.md</code></td><td>11/18 피드백 결과 수치 요약</td></tr>
+<tr><td><code>paper/</code></td><td>원고 (LaTeX)</td></tr>
+</table></div>
+<div class="tw"><table>
+<tr><th style="width:14%">커밋</th><th>내용</th></tr>
+<tr><td><code>8166f41</code></td><td>2D 폐루프 (GC)</td></tr>
+<tr><td><code>2cb3c3d</code></td><td>11/4 이후 총정리 PDF, 아티팩트 원본</td></tr>
+<tr><td><code>b2aa99e</code></td><td>폐루프: 감속·정지, 목표 근처 안전 확인, ETH, 충돌 원인</td></tr>
+<tr><td><code>443d1af</code></td><td>파일럿 v3 (20문항, 학습 블록 먼저), 축소 시뮬레이션</td></tr>
+<tr><td><code>959d7ec</code></td><td>DPO baseline, regret 정의, 곡선</td></tr>
+<tr><td><code>23a1ce0</code></td><td>Crowd-FM vs VQ-VAE 비교</td></tr>
+<tr><td><code>9731acb</code></td><td>11/18 피드백 결과 요약</td></tr>
+<tr><td><code>995c937</code></td><td>원고 뼈대 (LaTeX), 표 자동 생성</td></tr>
+<tr><td><code>a26bc1d</code></td><td>원고 서론 본문</td></tr>
+<tr><td><code>151406c</code></td><td>파일럿 페이지: 목적지 안내, 화살표·경로 표시</td></tr>
+</table></div>
+<p class="note"><code>data/</code>(13 GB)와 <code>model/</code>(8.9 GB)는 Hugging Face에서 받은 외부 데이터·체크포인트로, GitHub 파일 크기 제한(100 MB)을 넘어 커밋하지 않았다.</p>
+
+</main>
