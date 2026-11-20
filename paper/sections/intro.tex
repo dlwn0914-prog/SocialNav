@@ -17,7 +17,7 @@ infers what they want~\citep{christiano2017deep,sadigh2017active}. In robotics, 
 so a preference must be identified from a handful of answers, and the trajectories being compared must be meaningful to a person: safe,
 plausible, and different in ways the user cares about.
 
-Our key idea is to separate \emph{what} the robot can do from \emph{which} of those behaviours a particular user wants.
+Our key idea is to separate \emph{what} the robot can do from \emph{which} of those behaviours a particular user wants (Fig.~\ref{fig:overview}).
 For the first, we learn a discrete codebook of human walking behaviours with a VQ-VAE~\citep{vandenoord2017neural} trained on pedestrian
 trajectories. Decoding the codebook in a given situation yields a small set of candidate paths that are human-like by construction and
 differ in style -- passing left or right, ahead or behind, slowing down or keeping pace -- and a safety filter removes the ones that come too

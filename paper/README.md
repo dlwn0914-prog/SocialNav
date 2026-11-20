@@ -12,6 +12,7 @@ LaTeX skeleton. There is no LaTeX on the lab server, so upload the `paper/` fold
 | tables/generator.tex | Q3: Crowd-FM vs VQ-VAE × Random / AQ / EUBO | results/codebook/generator/ |
 | tables/closed_loop.tex | Q4: closed-loop replay | results/codebook/closed_loop/*_safe_c0.5.json |
 | figures/fig_regret.pdf | SR_n vs number of queries | utils/plot_regret_curves.py |
+| figures/fig_overview.pdf | Fig. 1 pipeline overview | utils/figure_overview.py |
 | sections/appendix.tex | Agreement table, ETH destination horizon | results/codebook/{dpo,style,dest8}/ |
 
 Regenerate the tables and figure after a rerun:
