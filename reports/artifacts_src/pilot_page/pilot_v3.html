@@ -64,7 +64,7 @@ kbd { font-family:var(--mono); font-size:.8em; border:1px solid var(--line); bor
 <ul class="rules">
 <li>사람들 사이를 지나가는 장면, 줄 서 있는 사람들, 둘러서서 대화하는 사람들, 나란히 걸어오는 일행, 앞에서 천천히 걷는 사람 등 여러 장면이 나옵니다. 장면 설명이 있으면 먼저 읽어 주세요.</li>
 <li>그림은 위에서 내려다본 모습이고, 로봇은 아래에서 위쪽으로 출발합니다. 4.8초 동안의 움직임이 반복 재생됩니다.</li>
-<li>점선은 로봇이 갈 경로, 초록 화살표는 목적지 방향입니다. 회색 점은 사람이고, 짧은 선은 걷는 방향입니다. 사람들을 잇는 선은 같은 줄이나 일행이라는 표시입니다.</li>
+<li>파란 선은 로봇이 갈 경로, 초록 화살표는 목적지 방향입니다. 목적지는 화면 밖 멀리(15 m 이상 앞)에 있고, 화살표는 방향만 나타냅니다. 화살표 끝이 도착 지점이 아닙니다. 회색 점은 사람이고, 짧은 선은 걷는 방향입니다. 사람들을 잇는 선은 같은 줄이나 일행이라는 표시입니다.</li>
 <li>같은 장면이 두 번 나올 수 있습니다. 그때도 그 순간 끌리는 쪽을 고르면 됩니다.</li>
 <li>참가자 코드(예: P03)만 저장합니다. 이름은 적지 마세요. 응답은 claude.ai 계정의 익명 id와 함께 이 페이지의 저장소에 남고, 실험 담당자만 볼 수 있습니다.</li>
 </ul>
@@ -135,14 +135,16 @@ function draw(cv, q, path, t) {
   // destination direction
   const dn = Math.hypot(q.dest[0], q.dest[1]), u = [q.dest[0] / dn, q.dest[1] / dn];
   const [d0x, d0y] = X(0, 0), [d1x, d1y] = X(u[0] * 6.8, u[1] * 6.8);
-  g.strokeStyle = css("--accent"); g.globalAlpha = 0.55; g.lineWidth = 2 * dpr; g.setLineDash([2 * dpr, 4 * dpr]);
+  g.strokeStyle = css("--accent"); g.globalAlpha = 0.85; g.lineWidth = 2.5 * dpr; g.setLineDash([10 * dpr, 7 * dpr]);
   g.beginPath(); g.moveTo(d0x, d0y); g.lineTo(d1x, d1y); g.stroke(); g.setLineDash([]);
   const ang = Math.atan2(d1y - d0y, d1x - d0x);
   g.fillStyle = css("--accent"); g.beginPath(); g.moveTo(d1x, d1y);
-  g.lineTo(d1x - 12 * dpr * Math.cos(ang - 0.4), d1y - 12 * dpr * Math.sin(ang - 0.4));
-  g.lineTo(d1x - 12 * dpr * Math.cos(ang + 0.4), d1y - 12 * dpr * Math.sin(ang + 0.4)); g.fill(); g.globalAlpha = 1;
+  g.lineTo(d1x - 18 * dpr * Math.cos(ang - 0.4), d1y - 18 * dpr * Math.sin(ang - 0.4));
+  g.lineTo(d1x - 18 * dpr * Math.cos(ang + 0.4), d1y - 18 * dpr * Math.sin(ang + 0.4)); g.fill(); g.globalAlpha = 1;
+  g.font = `600 ${12 * dpr}px system-ui, sans-serif`; g.textAlign = d1x < cv.width / 2 ? "left" : "right"; g.textBaseline = "top";
+  g.fillText("목적지 방향 (15 m+ 앞)", d1x + (d1x < cv.width / 2 ? 10 : -10) * dpr, Math.max(4 * dpr, d1y - 6 * dpr));
   // planned path
-  g.strokeStyle = css("--robot"); g.lineWidth = 1.5 * dpr; g.setLineDash([5 * dpr, 4 * dpr]); g.globalAlpha = 0.6;
+  g.strokeStyle = css("--robot"); g.lineWidth = 2.5 * dpr; g.setLineDash([]); g.globalAlpha = 0.85;
   g.beginPath(); g.moveTo(...X(0, 0)); for (const p of path) g.lineTo(...X(p[0], p[1])); g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
   // travelled part
   g.strokeStyle = css("--robot"); g.lineWidth = 3 * dpr; g.beginPath(); g.moveTo(...X(0, 0));
