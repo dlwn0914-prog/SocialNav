@@ -124,6 +124,7 @@ function plan(seedStr) {
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 function lerpPath(path, t) {
   const pts = [[0, 0], ...path], k = Math.min(Math.floor(t / DT), 5), f = Math.min(t / DT - k, 1);
+  if (!(t > 0)) return pts[0];
   if (t >= T_END) return pts[6];
   return [pts[k][0] + (pts[k + 1][0] - pts[k][0]) * f, pts[k][1] + (pts[k + 1][1] - pts[k][1]) * f];
 }
@@ -174,7 +175,7 @@ function draw(cv, q, path, t) {
 let t0 = performance.now(), raf = 0;
 function frame(now) {
   const q = current(); if (!q) return;
-  const cyc = ((now - t0) / 1000) % (T_END + HOLD), t = Math.min(cyc, T_END);
+  const cyc = Math.max(0, (now - t0) / 1000) % (T_END + HOLD), t = Math.min(cyc, T_END);
   const [l, r] = sides(q);
   draw($("cA"), q, q.paths[l], t); draw($("cB"), q, q.paths[r], t);
   $("clock").textContent = `t = ${t.toFixed(1)} s`;

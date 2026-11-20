@@ -40,5 +40,9 @@ rep("""  g.lineTo(d1x - 12 * dpr * Math.cos(ang - 0.4), d1y - 12 * dpr * Math.si
 rep('g.strokeStyle = css("--robot"); g.lineWidth = 1.5 * dpr; g.setLineDash([5 * dpr, 4 * dpr]); g.globalAlpha = 0.6;',
     'g.strokeStyle = css("--robot"); g.lineWidth = 2.5 * dpr; g.setLineDash([]); g.globalAlpha = 0.85;')
 rep("점선은 로봇이 갈 경로", "파란 선은 로봇이 갈 경로")
+# the first animation frame can be stamped slightly before t0: a negative t made lerpPath index pts[-1],
+# throw, and stop the animation with an empty canvas (random questions, 11/20 report)
+rep("  if (t >= T_END) return pts[6];", "  if (!(t > 0)) return pts[0];\n  if (t >= T_END) return pts[6];")
+rep("const cyc = ((now - t0) / 1000) % (T_END + HOLD)", "const cyc = Math.max(0, (now - t0) / 1000) % (T_END + HOLD)")
 open(out, "w", encoding="utf-8").write(h)
 print(n, "questions", len(h) // 1024, "KB")
