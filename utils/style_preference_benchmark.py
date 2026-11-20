@@ -50,6 +50,12 @@ Reported on held-out situations (95% bootstrap over users):
 References: no preference (random safe code), human prior (argmax log p),
 oracle theta*. Paired differences EUBO - AQ, EUBO - Random per query count.
 
+DPO baselines (src/preference/dpo.py; --methods ...,DPO,DPO-EUBO): theta from
+the DPO loss with the human prior as the reference policy (theta_ref =
+sd_human e_human under this run's normalization), on random pairs (DPO) or
+on the pairs EUBO picks from the Laplace posterior of the same answers
+(DPO-EUBO, same questions as EUBO, different estimator).
+
 Usage:
     PYTHONPATH=. .venv/bin/python utils/style_preference_benchmark.py \
         --prior results/codebook/goalfix/gc_dest_s1.pt --out results/codebook/style/gc_gauss.json
@@ -62,6 +68,7 @@ import torch
 
 from src.preference.traj_vqvae import TrajVQVAE
 from utils.code_preference_benchmark import code_features
+from src.preference.dpo import DPOStrategy
 from utils.person_transfer_benchmark import METHODS, boot
 from utils.train_code_prior import load_prior, situation
 
@@ -130,6 +137,8 @@ def main():
     p.add_argument("--checkpoints", default="0,2,5,10,20")
     p.add_argument("--answer-scale", type=float, default=5.0)
     p.add_argument("--methods", default="Random,ActiveQuery,EUBO")
+    p.add_argument("--dpo-beta", type=float, default=1.0)
+    p.add_argument("--dpo-steps", type=int, default=100)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", default=None)
     args = p.parse_args()
@@ -239,7 +248,11 @@ def main():
         per = {c: [] for c in checkpoints}
         for ui, (th, (qs, te)) in enumerate(zip(thetas, users)):
             srng = np.random.default_rng(args.seed * 100003 + ui)
-            strat = METHODS[m](srng)
+            if m.startswith("DPO"):
+                strat = DPOStrategy(sd[-1] * np.eye(len(FEATURES))[-1], "eubo" if m == "DPO-EUBO" else "random",
+                                    beta=args.dpo_beta, steps=args.dpo_steps, rng=srng)
+            else:
+                strat = METHODS[m](srng)
             theta_hat = None
             for q in range(max(checkpoints) + 1):
                 if q in per:
@@ -262,7 +275,7 @@ def main():
             f"{c}: {curves[m][c]['agreement'][0]:.3f}/{curves[m][c]['answer_acc'][0]:.3f}" for c in checkpoints))
 
     paired = {}
-    for a, b in [("EUBO", "ActiveQuery"), ("EUBO", "Random")]:
+    for a, b in [("EUBO", "ActiveQuery"), ("EUBO", "Random"), ("EUBO", "DPO"), ("EUBO", "DPO-EUBO"), ("DPO", "Random")]:
         if a in per_user and b in per_user:
             paired[f"{a} - {b}"] = {str(c): {mm: boot(per_user[a][c][:, k] - per_user[b][c][:, k], rng)
                                              for k, mm in enumerate(METRICS[:3])} for c in checkpoints if c > 0}
