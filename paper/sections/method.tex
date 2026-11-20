@@ -35,7 +35,9 @@ People are extrapolated at constant velocity; a candidate is safe if its minimum
 progress towards the destination is at least $\rho=0.5$ times the best candidate's. The preference only chooses among safe candidates:
 \begin{equation}
   \mathcal{C}(s) = \bigl\{ k \;:\; d_{\min}(s,k) \ge c,\; \mathrm{prog}(s,k) \ge \rho \max_{k'} \mathrm{prog}(s,k') \bigr\}.
+  \label{eq:safe}
 \end{equation}
+Situations with fewer than four safe candidates are not used.
 
 \subsection{Style features}
 Each safe candidate is described by $\phi(s,k) \in \mathbb{R}^5$, none of which has an a-priori right sign:
@@ -53,7 +55,11 @@ Each query asks the pair maximizing the expected utility of the best option~\cit
 \begin{equation}
   (i,j) = \operatorname*{arg\,max}_{i \ne j} \; \mathbb{E}_{\theta \sim p(\theta \mid \mathcal{D})}\bigl[\max\{u_i, u_j\}\bigr],
 \end{equation}
-estimated with 512 posterior samples. At test time the robot executes
-$\hat k_n(s) = \arg\max_{k \in \mathcal{C}(s)} \hat\theta_n^\top \phi(s,k)$ with $\hat\theta_n$ the posterior mean after $n$ answers.
+estimated with 512 posterior samples. At test time, in any situation, the robot executes
+\begin{equation}
+  \hat k_n(s) = \operatorname*{arg\,max}_{k \in \mathcal{C}(s)} \hat\theta_n^{\top}\phi(s,k),
+  \label{eq:exec}
+\end{equation}
+with $\hat\theta_n$ the posterior mean after $n$ answers.
 
 \input{sections/regret}

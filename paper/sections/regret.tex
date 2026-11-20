@@ -1,29 +1,12 @@
-% Same text as reports/method_regret.tex (11/18 feedback item 4); edit here from now on.
-% TODO: the "Setting" and "Recommendation" paragraphs below repeat Sec. 3; trim when merging.
+% Formal regret definition (11/18 feedback item 4). Setting, safe set and executed path are defined in Sec. 3.
 \subsection{Evaluation: simple regret}
 \label{sec:regret}
 
-\paragraph{Setting.}
-A situation $s$ offers a finite candidate set $\mathcal{K}$ (the codebook paths).
-The safety filter keeps
-\begin{equation}
-  \mathcal{C}(s) = \bigl\{ k \in \mathcal{K} \;:\; d_{\min}(s,k) \ge c,\;
-  \mathrm{prog}(s,k) \ge \rho \max_{k'} \mathrm{prog}(s,k') \bigr\},
-\end{equation}
-with clearance $c = 0.5$\,m and $\rho = 0.5$; only situations with $|\mathcal{C}(s)| \ge 4$ are used.
-Each safe candidate has normalized style features $\phi(s,k) \in \mathbb{R}^d$
-(side, front, yield, detour, human; $d=5$).
-A user is a unit vector $\theta^\ast$ ($\lVert\theta^\ast\rVert = 1$) with utility
-$u^\ast(s,k) = \theta^{\ast\top}\phi(s,k)$, and answers a query $(i,j)$ in a query situation with
-$P(i \succ j) = \sigma\bigl(\beta\,(u^\ast(s,i) - u^\ast(s,j))\bigr)$, $\beta = 5$.
-
-\paragraph{Recommendation.}
-After $n$ answered queries a method returns an estimate $\hat\theta_n$
-(the Laplace posterior mean for Bradley--Terry methods, the DPO solution for DPO)
-and, in any situation, executes
-\begin{equation}
-  \hat k_n(s) = \operatorname*{arg\,max}_{k \in \mathcal{C}(s)} \hat\theta_n^{\top}\phi(s,k).
-\end{equation}
+\paragraph{Users.}
+For evaluation a user is a unit vector $\theta^\ast$ ($\lVert\theta^\ast\rVert = 1$) with utility $u^\ast(s,k) = \theta^{\ast\top}\phi(s,k)$,
+who answers a question $(i,j)$ with $P(i \succ j) = \sigma\bigl(\beta\,(u^\ast(s,i) - u^\ast(s,j))\bigr)$, $\beta = 5$.
+After $n$ answers a method returns $\hat\theta_n$ (the Laplace posterior mean for Bradley--Terry methods, the DPO solution for DPO,
+Sec.~\ref{sec:dpo}) and executes $\hat k_n(s)$ of Eq.~\eqref{eq:exec} among the safe candidates $\mathcal{C}(s)$ of Eq.~\eqref{eq:safe}.
 
 \paragraph{Simple regret.}
 The regret of that choice is the utility lost against the user's best safe candidate,
@@ -40,17 +23,15 @@ The reported number is its expectation over users and held-out test situations,
   \sum_{s \in \mathcal{S}_{\text{test}}} r_n(s)\Bigr],
   \label{eq:sr}
 \end{equation}
-estimated with 200 synthetic users per setting, 10 query situations and 20 test situations per user,
-drawn from disjoint sets ($\mathcal{S}_{\text{query}} \cap \mathcal{S}_{\text{test}} = \emptyset$;
-answers are only collected in $\mathcal{S}_{\text{query}}$).
-Confidence intervals are 95\% bootstraps over users.
+where answers are only collected in query situations disjoint from the test situations
+($\mathcal{S}_{\text{query}} \cap \mathcal{S}_{\text{test}} = \emptyset$; sizes in Sec.~\ref{sec:experiments}).
 $\mathrm{SR}_n = 0$ for the oracle ($\hat\theta = \theta^\ast$);
 a uniformly random safe candidate gives $\mathrm{SR} \approx 0.5$.
 
 \paragraph{Why simple regret.}
 Queries cost the user's attention but no driving utility, and what matters is the path the robot
 executes afterwards. The objective is therefore best-arm identification (simple regret) rather
-than cumulative regret over the queries. EUBO~\cite{astudillo2023qeubo} is one-step Bayes-optimal
+than cumulative regret over the queries. EUBO~\citep{astudillo2023qeubo} is one-step Bayes-optimal
 for exactly this objective under noise-free answers, which motivates its use.
 Fig.~\ref{fig:regret} plots $\mathrm{SR}_n$ against the number of queries $n \in \{0,2,5,10,20\}$.
 
