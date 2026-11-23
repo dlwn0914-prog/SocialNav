@@ -47,9 +47,9 @@ a { color:var(--accent); }
 <main>
 
 <h1>Learning Individual Walking-Style Preferences for Crowd Navigation</h1>
-<div class="meta">연구 현황 총정리 · 2026-11-20 기준 · 코드 SocialNav <code>main 151406c</code> (fork <code>dlwn0914-prog/SocialNav</code>) · OpenReview 제출 11/25까지 5일</div>
+<div class="meta">연구 현황 총정리 · 2026-11-20 기준 · 코드 SocialNav <code>main e821a8f</code> (fork <code>dlwn0914-prog/SocialNav</code>) · OpenReview 제출 11/25까지 5일</div>
 
-<p class="lead">사람 보행 궤적으로 학습한 VQ-VAE 코드북이 안전하고 스타일이 다양한 후보 경로를 만들고, 사용자는 A/B 질문 몇 개에 답하며, 로봇은 EUBO로 고른 질문의 답으로 Bayesian Bradley–Terry 선호를 추정해 처음 보는 상황에서 경로를 고른다. 11/18 피드백 네 가지(파일럿 학습·테스트 분리, 문항 축소, DPO 비교, regret 정식 정의)와 추가 요청(Crowd-FM 후보 생성기 비교)을 모두 반영했다. 합성 사용자 기준으로 질문 5개면 regret이 0.45–0.47(사람 데이터 prior)에서 0.09–0.12로 내려가고, DPO보다 낮으며, 이득의 대부분은 질문 선택에서 나온다. 같은 장면에서 코드북 후보는 Crowd-FM 후보보다 regret이 0.20–0.26 낮다. 남은 큰 일은 원고 완성과 실제 사람 파일럿이다.</p>
+<p class="lead">사람 보행 궤적으로 학습한 VQ-VAE 코드북이 안전하고 스타일이 다양한 후보 경로를 만들고, 사용자는 A/B 질문 몇 개에 답하며, 로봇은 EUBO로 고른 질문의 답으로 Bayesian Bradley–Terry 선호를 추정해 처음 보는 상황에서 경로를 고른다. 11/18 피드백 네 가지(파일럿 학습·테스트 분리, 문항 축소, DPO 비교, regret 정식 정의)와 추가 요청(Crowd-FM 후보 생성기 비교)을 모두 반영했다. 합성 사용자 기준으로 질문 5개면 regret이 0.45–0.47(사람 데이터 prior)에서 0.09–0.12로 내려가고, DPO보다 낮으며, 이득의 대부분은 질문 선택에서 나온다. 같은 장면에서 코드북 후보는 Crowd-FM 후보보다 regret이 0.20–0.26 낮다. 원고는 모든 절의 초안과 그림 1까지 들어갔고, 남은 큰 일은 인용 4곳, Overleaf 컴파일, 실제 사람 파일럿이다.</p>
 
 <nav class="toc" aria-label="목차"><ol>
 <li><a href="#status">한눈에 보는 상태</a></li>
@@ -77,7 +77,7 @@ a { color:var(--accent); }
 <tr><td>regret 정식 정의 + 곡선</td><td><span class="pill done">완료</span></td><td><code>paper/sections/regret.tex</code>, 그림 <code>paper/figures/fig_regret.pdf</code></td></tr>
 <tr><td>2D 폐루프</td><td><span class="pill done">완료</span></td><td>GC 300 / ETH 114 에피소드, 감속·정지 후보와 목표 근처 안전 확인 추가, 충돌 원인 분석 (8절)</td></tr>
 <tr><td>파일럿 v3 (20문항)</td><td><span class="pill part">배포, 응답 0</span></td><td>링크는 v3으로 교체됨. 비공개 상태라 공유를 열어야 참가자가 들어올 수 있음. IRB 미확인</td></tr>
-<tr><td>원고 (LaTeX)</td><td><span class="pill part">뼈대 + 일부 본문</span></td><td>초록·서론·방법·실험·한계·결론 초안, 표 4개 자동 생성. 관련 연구 일부·참고문헌·그림 1 남음</td></tr>
+<tr><td>원고 (LaTeX)</td><td><span class="pill part">전 절 초안</span></td><td>초록·서론·관련 연구·방법·실험(파일럿 절 포함)·한계·결론 초안, 그림 1·2, 본문 표 4개와 부록 표 2개. 남은 것: 인용 4곳, 파일럿 결과, 컴파일 확인 (11절)</td></tr>
 <tr><td>서버 GPU</td><td><span class="pill todo">문제</span></td><td>드라이버(커널 580.173)와 라이브러리(580.178) 버전 불일치로 <code>nvidia-smi</code> 실패. 재부팅 필요(공용 서버라 관리자 조율)</td></tr>
 </table></div>
 
@@ -257,6 +257,7 @@ a { color:var(--accent); }
 <li>링크: <a href="https://claude.ai/artifact/F4mKcyyLz1PBuma7geR987">파일럿 v3</a> (비공개, 공유를 열어야 참가자 접근 가능). 오프라인판 <code>results/codebook/pilot_v3/pilot_offline.html</code>.</li>
 <li>응답 0건. v2 시절 응답 1건(p01, 60문항 중 28개)은 임시 폴더에 백업했고 git에는 넣지 않았다. p01이 링크를 다시 열면 DB의 v2 응답은 지워진다.</li>
 <li>IRB 미확인. 확인 전에는 논문에 "면제"라고 쓰지 않는다.</li>
+<li>11/20 버그 수정: 일부 문항에서 그림이 안 뜨던 문제(첫 애니메이션 프레임 시각이 문항 표시 시각보다 앞서면 음수 시간으로 그리기가 멈춤)를 고쳤다. 20문항 모두 헤드리스 브라우저로 확인. v2 페이지에도 같은 버그가 있었으므로 v2 응답 p01은 일부 문항을 그림 없이 답했을 수 있다(v3 분석에는 쓰지 않음).</li>
 </ul>
 
 <h2 id="dest">10. 목적지 표시와 민감도</h2>
@@ -276,17 +277,28 @@ a { color:var(--accent); }
 <h2 id="paper">11. 원고 상태 (<code>paper/</code>, LaTeX)</h2>
 <div class="tw"><table>
 <tr><th style="width:30%">파일</th><th style="width:16%">상태</th><th>내용 / 남은 것</th></tr>
-<tr><td><code>sections/abstract.tex</code></td><td><span class="pill done">초안</span></td><td>regret 기준, DPO와 생성기 결과 포함</td></tr>
-<tr><td><code>sections/intro.tex</code></td><td><span class="pill done">본문</span></td><td>동기, 한계, 핵심 아이디어, 결과 요약, 기여 3개. 인용 3곳 TODO</td></tr>
-<tr><td><code>sections/related.tex</code></td><td><span class="pill part">일부</span></td><td>선호 학습·능동 질문·VQ-VAE 초안. 군중 내비게이션 문단 TODO</td></tr>
-<tr><td><code>sections/method.tex</code>, <code>regret.tex</code></td><td><span class="pill done">초안</span></td><td>코드북, 안전 필터, 특징, BT+EUBO, simple regret. 중복 문단 정리 필요</td></tr>
-<tr><td><code>sections/experiments.tex</code></td><td><span class="pill done">초안</span></td><td>Q1 질문 방법, Q2 DPO, Q3 생성기, Q4 폐루프. 파일럿 절 TODO</td></tr>
-<tr><td><code>sections/limitations.tex</code>, <code>conclusion.tex</code></td><td><span class="pill done">초안</span></td><td>합성 사용자, 선형 특징, 폐루프 단순화, 생성기 비교 조건</td></tr>
-<tr><td><code>tables/*.tex</code></td><td><span class="pill done">자동 생성</span></td><td>regret, 일치율, 생성기, 폐루프. <code>utils/make_paper_tables.py</code>로 결과 JSON에서 재생성</td></tr>
-<tr><td><code>refs.bib</code></td><td><span class="pill part">10개</span></td><td>Crowd-FM, PRIEST, UserAlign(AQ), 군중 내비게이션 정책, proxemics 인용 추가 필요</td></tr>
-<tr><td>그림 1 (개요도)</td><td><span class="pill todo">없음</span></td><td>상황 → 코드북 후보 → 안전 필터 → 특징 → A/B 질문 → θ → 실행 경로</td></tr>
+<tr><td><code>sections/abstract.tex</code></td><td><span class="pill done">초안</span></td><td>regret 기준, DPO·생성기·폐루프 결과 포함 (약 220단어)</td></tr>
+<tr><td><code>sections/intro.tex</code></td><td><span class="pill done">완료</span></td><td>동기(사람마다 다른 주행 선호), 기존 방법의 한계, 핵심 아이디어(할 수 있는 것과 원하는 것의 분리), 결과 요약, 기여 3개. 그림 1 참조. 남은 인용: Crowd-FM 1곳</td></tr>
+<tr><td><code>sections/related.tex</code></td><td><span class="pill done">완료</span></td><td>군중 내비게이션(서베이, Social Force, ORCA, 강화학습·역강화학습, 궤적 예측, diffusion·flow matching), 선호 학습(BT, RLHF, DPO와 우리 설정의 차이), 능동 질문, VQ-VAE. 남은 인용: Crowd-FM, PRIEST, UserAlign, 궤적 코드북</td></tr>
+<tr><td><code>sections/method.tex</code></td><td><span class="pill done">완료</span></td><td>그림 1, 문제 설정, 코드북과 학습 세부(데이터 분할, 최적화, prior 입력), 안전 필터(식 번호 <code>eq:safe</code>), 특징, BT + EUBO, 실행 경로(<code>eq:exec</code>)</td></tr>
+<tr><td><code>sections/regret.tex</code></td><td><span class="pill done">완료</span></td><td>평가용 사용자 모델, simple regret 식, 질문·테스트 상황 분리, 왜 simple regret인가, 변형 3가지, 그림 2. 방법 절과 겹치던 문단 정리</td></tr>
+<tr><td><code>sections/experiments.tex</code></td><td><span class="pill done">초안</span></td><td>데이터 표, Q1 질문 방법, Q2 DPO, Q3 생성기, Q4 폐루프, 파일럿 절(절차·학습/테스트 분리·측정·검정력). 결과 단락과 참가자 수·IRB는 TODO</td></tr>
+<tr><td><code>sections/limitations.tex</code>, <code>conclusion.tex</code></td><td><span class="pill done">초안</span></td><td>파일럿 상태와 다음 단계 한 문장씩 TODO</td></tr>
+<tr><td><code>sections/appendix.tex</code></td><td><span class="pill done">완료</span></td><td>일치율 표, ETH 목적지 기준(8초 vs 12초) 표. 보행자 수 기준을 본문 데이터 표와 맞춤</td></tr>
+<tr><td>표 (<code>tables/*.tex</code> + 데이터 표)</td><td><span class="pill done">완료</span></td><td>regret, 일치율, 생성기, 폐루프는 <code>utils/make_paper_tables.py</code>로 결과 JSON에서 자동 생성. 데이터 표는 데이터 파일에서 재계산한 값</td></tr>
+<tr><td>그림 1 (<code>figures/fig_overview.pdf</code>)</td><td><span class="pill done">완료</span></td><td>실제 GC 상황 하나로 (a) 코드북 16개 → (b) 안전 9개 → (c) EUBO 질문 → (d) θ* vs θ̂ → (e) 실행 경로. <code>utils/figure_overview.py</code></td></tr>
+<tr><td>그림 2 (<code>figures/fig_regret.pdf</code>)</td><td><span class="pill done">완료</span></td><td>질문 수에 따른 simple regret (5절 그림)</td></tr>
+<tr><td><code>refs.bib</code></td><td><span class="pill part">24개</span></td><td>기억에 의존한 서지라 제출 전 출판사 페이지와 대조 필요. Crowd-FM, PRIEST, UserAlign, 궤적 코드북 미입력</td></tr>
 </table></div>
-<p class="note">서버에 LaTeX가 없어 컴파일은 Overleaf에서. <code>\ref</code>/<code>\label</code>, 인용 키, 중괄호 짝은 스크립트로 확인했다.</p>
+<figure><img src="{{FIG_OVERVIEW}}" alt="그림 1. 그랜드센트럴 상황 하나에서 코드북 후보 16개, 안전 필터 후 9개, EUBO가 고른 A/B 두 경로, 예시 사용자 θ*와 추정 θ̂의 특징별 막대, 그리고 θ̂ 기준으로 실행한 경로와 사람 prior가 고른 경로를 나란히 보여 주는 다섯 칸 그림.">
+<figcaption>그림 1 (원고 방법 절). (d)의 θ*는 그림을 위한 예시 사용자이고, θ̂은 다른 상황 5개에서 받은 답으로 추정했다. (e)의 상황은 그 5개에 포함되지 않는다.</figcaption></figure>
+<h3>원고에 남은 TODO</h3>
+<ul>
+<li><b>인용 4곳:</b> Crowd-FM, PRIEST, UserAlign(AQ), 궤적·동작 코드북 관련 연구. 정확한 서지가 필요하다.</li>
+<li><b>파일럿:</b> 참가자 수와 모집 대상, IRB 상태, 결과 수치. 응답을 못 모으면 절차 단락만 남기고 "진행 중"으로 쓰고, 주장은 한계 절로 옮긴다.</li>
+<li><b>한계·결론:</b> 파일럿 상태와 다음 단계 한 문장씩.</li>
+<li><b>컴파일:</b> 서버에 LaTeX가 없어 Overleaf에서 확인 필요. <code>\ref</code>/<code>\label</code>, 인용 키, 중괄호 짝은 스크립트로 확인했다.</li>
+</ul>
 
 <h2 id="claims">12. 주장할 수 있는 것과 없는 것</h2>
 <div class="tw"><table>
@@ -302,9 +314,9 @@ a { color:var(--accent); }
 <h2 id="todo">13. 남은 일과 일정 (11/25 제출)</h2>
 <div class="tw"><table>
 <tr><th style="width:8%">우선</th><th style="width:44%">일</th><th>메모</th></tr>
-<tr><td>1</td><td>관련 연구 군중 내비게이션 문단, 빠진 참고문헌</td><td>Crowd-FM, PRIEST, UserAlign 서지 확인 필요</td></tr>
-<tr><td>2</td><td>그림 1 (개요도)와 정성 예시 그림</td><td>파일럿 장면 그림 재사용 가능</td></tr>
-<tr><td>3</td><td>Overleaf 컴파일, 분량·표 배치 정리</td><td>regret.tex 중복 문단 정리</td></tr>
+<tr><td>1</td><td>빠진 인용 4곳 (Crowd-FM, PRIEST, UserAlign, 궤적 코드북)과 기존 24개 서지 대조</td><td>관련 연구·그림 1·데이터 표·regret 정리는 완료</td></tr>
+<tr><td>2</td><td>Overleaf 컴파일, 분량·표·그림 배치 정리</td><td>두 단 폭 그림 1, 본문 표 4개와 부록 표 2개</td></tr>
+<tr><td>3</td><td>한계·결론의 남은 한 문장씩</td><td>파일럿 결과에 따라</td></tr>
 <tr><td>4</td><td>파일럿: 공유 열기 → 참가자 모집 → <code>utils/analyze_pilot.py</code></td><td>IRB 확인 여부에 따라 논문 포함 결정. 못 넣으면 한계 절로</td></tr>
 <tr><td>5</td><td>초록 최종 수정 (OpenReview 입력)</td><td>파일럿 결과가 있으면 한 문장 추가</td></tr>
 <tr><td>선택</td><td>GPU 복구 후 ETH에서 Crowd-FM 비교, 불확실성 반영 안전 필터</td><td>재부팅은 관리자와 조율</td></tr>
@@ -318,7 +330,7 @@ a { color:var(--accent); }
 <tr><td><code>utils/generator_comparison.py</code></td><td>Crowd-FM vs VQ-VAE 비교</td></tr>
 <tr><td><code>utils/closed_loop_2d.py</code></td><td>2D 폐루프 (<code>--ladder</code>, <code>--safe-terminal</code>, <code>--dataset eth</code>)</td></tr>
 <tr><td><code>utils/build_pilot_v3.py</code>, <code>utils/pilot_size_sim.py</code>, <code>utils/analyze_pilot.py</code></td><td>파일럿 v3 문항, 축소 시뮬레이션, 응답 분석</td></tr>
-<tr><td><code>utils/make_paper_tables.py</code>, <code>utils/plot_regret_curves.py</code></td><td>논문 표와 regret 곡선</td></tr>
+<tr><td><code>utils/make_paper_tables.py</code>, <code>utils/plot_regret_curves.py</code>, <code>utils/figure_overview.py</code></td><td>논문 표, regret 곡선, 그림 1</td></tr>
 <tr><td><code>results/codebook/{dpo,generator,closed_loop,pilot_v3}/</code></td><td>결과 JSON과 로그</td></tr>
 <tr><td><code>reports/results_1120.md</code></td><td>11/18 피드백 결과 수치 요약</td></tr>
 <tr><td><code>paper/</code></td><td>원고 (LaTeX)</td></tr>
@@ -335,6 +347,13 @@ a { color:var(--accent); }
 <tr><td><code>995c937</code></td><td>원고 뼈대 (LaTeX), 표 자동 생성</td></tr>
 <tr><td><code>a26bc1d</code></td><td>원고 서론 본문</td></tr>
 <tr><td><code>151406c</code></td><td>파일럿 페이지: 목적지 안내, 화살표·경로 표시</td></tr>
+<tr><td><code>dbc0223</code></td><td>파일럿 페이지: 그림이 안 뜨던 버그 수정</td></tr>
+<tr><td><code>2bd8921</code></td><td>11/20 보고서 원본</td></tr>
+<tr><td><code>c9d074f</code></td><td>원고: 군중 내비게이션 관련 연구와 인용</td></tr>
+<tr><td><code>7c5c3ff</code>, <code>8099051</code></td><td>원고: 그림 1 개요도와 캡션</td></tr>
+<tr><td><code>a1f56b2</code></td><td>원고: 파일럿 절 (절차와 분석 계획)</td></tr>
+<tr><td><code>9cb0b36</code></td><td>원고: regret 절 중복 정리, 식 번호</td></tr>
+<tr><td><code>e821a8f</code></td><td>원고: 학습 세부와 데이터 표, 부록 보행자 수 기준</td></tr>
 </table></div>
 <p class="note"><code>data/</code>(13 GB)와 <code>model/</code>(8.9 GB)는 Hugging Face에서 받은 외부 데이터·체크포인트로, GitHub 파일 크기 제한(100 MB)을 넘어 커밋하지 않았다.</p>
 
