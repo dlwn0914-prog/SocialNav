@@ -92,15 +92,14 @@ candidate judged safe under constant-velocity prediction was followed, i.e.\ the
 
 \input{tables/closed_loop}
 
-\subsection{Pilot with real participants}
+\subsection{User study protocol (in progress)}
 \label{sec:pilot}
-% Results paragraph and table: fill from `utils/analyze_pilot.py --answers <responses>` once responses exist.
-% If no responses are collected before submission, keep only the protocol paragraph, state that the study is ongoing,
-% and move the claim to Sec. 6. Ethics: \todo{IRB status -- do not write "exempt" unless it is confirmed in writing}.
+% Results are not reported in this version. When responses exist: fill from `utils/analyze_pilot.py --answers <responses>`,
+% add N, population and an ethics statement (do not write "exempt" unless the IRB confirmed it in writing).
 
 The synthetic users above answer with the same Bradley--Terry model the estimator assumes. Whether real people's walking-style
-preferences are linear in our features, consistent, and different from person to person is what a user study has to show; we
-report a pilot with \todo{$N$} participants from \todo{population, e.g.\ members of a university lab}.
+preferences are linear in our features, consistent, and different from person to person is what a user study has to show. We describe
+the protocol of a pilot study that is in progress; it has not produced results for this submission, and no claim in this paper rests on it.
 
 \paragraph{Protocol.}
 Each participant answers 20 A/B questions in a web page (about 5 minutes). A question shows the same top-down scene twice, with the
@@ -120,15 +119,12 @@ the information about $\theta$ ($\log\det(I + \sum_q \Delta x_q \Delta x_q^\top)
 in simulation, ten such questions reach a held-out agreement of 0.876 (dense users) and 0.792 (sparse), against 0.837 and 0.780 for ten
 random questions from the same pool and 0.928 and 0.865 for all 42 questions of an earlier 60-question version (2000 synthetic users).
 
-\paragraph{Measures.}
-A personal $\hat\theta$ is fit on each participant's train answers (Laplace Bradley--Terry, prior $\mathcal{N}(0,I)$) and scored by the share
-of their test answers it predicts. It is compared with (i) a \emph{shared} $\hat\theta$ fit on all other participants' train answers and
-(ii) the human prior (always the more typical path). We also report the repeat consistency (same path chosen when the sides are swapped),
+\paragraph{Planned measures.}
+A personal $\hat\theta$ will be fit on each participant's train answers (Laplace Bradley--Terry, prior $\mathcal{N}(0,I)$) and scored by the share
+of their test answers it predicts. It will be compared with (i) a \emph{shared} $\hat\theta$ fit on all other participants' train answers and
+(ii) the human prior (always the more typical path). We will also report the repeat consistency (same path chosen when the sides are swapped),
 the rate of choosing the screen-left option, and the per-feature rate of choosing the option higher on that feature.
 In simulation, the personal--shared difference needs about 20 participants for 80\% power when people differ moderately
 (difference 0.13), and cannot be detected when they are nearly alike; with eight test questions the per-participant accuracy has a
-standard deviation of about 0.14, so we report means over participants with 95\% bootstrap intervals.
+standard deviation of about 0.14, so we will report means over participants with 95\% bootstrap intervals.
 
-\paragraph{Results.}
-\todo{Fill from utils/analyze_pilot.py: personal / shared / prior test accuracy with CIs, personal $-$ shared (paired),
-repeat consistency, left rate, order\_ok for every participant, and the cosine similarity between participants' $\hat\theta$.}
