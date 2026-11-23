@@ -32,4 +32,9 @@ simple regret; we adopt it because our objective is the one path executed after 
 \todo{cite the active-query (version-space) baseline (UserAlign) once the reference is confirmed}
 
 \paragraph{Discrete behaviour representations.}
-VQ-VAEs~\citep{vandenoord2017neural} learn a discrete codebook; \todo{cite trajectory/motion codebook works (motion primitives, VQ for trajectory prediction)}.
+Planners have long searched over a fixed set of motion primitives~\citep{pivtoraiko2009lattice}. In motion prediction, anchor trajectories
+\citep{chai2019multipath} and trajectory sets~\citep{phanminh2020covernet} turn forecasting into classification over a discrete set of
+futures, MotionLM~\citep{seff2023motionlm} models motion as sequences of discrete tokens, and VQ-VAEs~\citep{vandenoord2017neural} have
+been used to learn a codebook for pedestrian trajectory forecasting~\citep{benaglia2024lowrank}. These works use the discrete set to predict
+what an agent will do; we use a codebook learned from pedestrians as the set of walking styles among which a user chooses how the robot
+should move.
