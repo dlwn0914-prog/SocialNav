@@ -10,8 +10,9 @@ Learning-based methods train collision-avoidance policies with deep reinforcemen
 such as passing on one side to the reward~\citep{chen2017socially}, model crowd--robot interaction with attention~\citep{chen2019crowd},
 or recover a navigation cost from human demonstrations with inverse reinforcement learning~\citep{kretzschmar2016socially}.
 Pedestrian trajectory prediction~\citep{alahi2016social,gupta2018social} and generative planners based on diffusion~\citep{janner2022planning}
-or flow matching~\citep{lipman2023flow} provide multimodal samples of plausible motion; the flow-matching crowd-navigation planner we compare
-against as a candidate generator \todo{cite Crowd-FM} draws such samples and refines them with \todo{cite PRIEST}.
+or flow matching~\citep{lipman2023flow} provide multimodal samples of plausible motion; Crowd-FM~\citep{singha2026crowdfm}, the crowd-navigation planner we compare
+against as a candidate generator, draws such samples with conditional flow matching, refines them with a projection-based
+optimizer~\citep{rastgar2024priest} and selects one with a score learned from human demonstrations.
 All of these encode one notion of social compliance, fixed by hand-tuned costs, a designed reward or the average of the training data;
 a different user's preference requires retuning or retraining. We keep the generative part, a codebook learned from pedestrian data,
 but leave the choice among its safe candidates to a preference identified from the individual user.
@@ -29,7 +30,8 @@ situation, which makes a low-dimensional Bayesian model and the choice of questi
 \citet{sadigh2017active} select trajectory comparisons that maximize information about a linear reward.
 EUBO~\citep{astudillo2023qeubo} asks the pair maximizing the expected utility of the better option and is one-step Bayes-optimal for
 simple regret; we adopt it because our objective is the one path executed after querying.
-\todo{cite the active-query (version-space) baseline (UserAlign) once the reference is confirmed}
+UserAlign~\citep{padurean2025useralign} personalizes a generative model at inference time from a few pairwise queries, treating
+the choice of a response from a fixed pool as best-arm identification in a logistic bandit; we use its query rule as the AQ baseline.
 
 \paragraph{Discrete behaviour representations.}
 Planners have long searched over a fixed set of motion primitives~\citep{pivtoraiko2009lattice}. In motion prediction, anchor trajectories

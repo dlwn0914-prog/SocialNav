@@ -50,6 +50,13 @@ Reported on held-out situations (95% bootstrap over users):
 References: no preference (random safe code), human prior (argmax log p),
 oracle theta*. Paired differences EUBO - AQ, EUBO - Random per query count.
 
+Robustness (users the estimator's model does not describe): --lapse e makes
+each answer a coin flip with probability e; --nonlinear w adds pairwise
+feature interactions to the true utility, u = theta* . phi + w q(phi),
+q(phi) = sum_{a<b} W_ab phi_a phi_b with a random unit-norm W per user, so
+no linear theta reaches zero regret (the oracle theta* row is then > 0).
+--answer-scale changes the answer noise.
+
 DPO baselines (src/preference/dpo.py; --methods ...,DPO,DPO-EUBO): theta from
 the DPO loss with the human prior as the reference policy (theta_ref =
 sd_human e_human under this run's normalization), on random pairs (DPO) or
@@ -139,6 +146,8 @@ def main():
     p.add_argument("--methods", default="Random,ActiveQuery,EUBO")
     p.add_argument("--dpo-beta", type=float, default=1.0)
     p.add_argument("--dpo-steps", type=int, default=100)
+    p.add_argument("--lapse", type=float, default=0.0, help="probability of a random answer")
+    p.add_argument("--nonlinear", type=float, default=0.0, help="weight of the pairwise-interaction term of the true utility")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", default=None)
     args = p.parse_args()
@@ -185,6 +194,17 @@ def main():
           f"safe codes median {np.median(safe[C].sum(1)):.0f}/{K}")
 
     thetas = sample_theta(rng, args.n_users, args.users)
+    nf = len(FEATURES)
+    ia, ib = np.triu_indices(nf, 1)
+    Ws = np.random.default_rng(args.seed + 11).normal(size=(args.n_users, len(ia)))  # own stream: thetas/users unchanged
+    Ws /= np.linalg.norm(Ws, axis=1, keepdims=True)
+    W_of = {th.tobytes(): w for th, w in zip(thetas, Ws)}
+
+    def true_u(F, th):
+        u = F @ th
+        if args.nonlinear:
+            u = u + args.nonlinear * (F[:, ia] * F[:, ib]) @ W_of[th.tobytes()]
+        return u
     users = []
     for _ in range(args.n_users):
         idx = C[rng.choice(len(C), args.n_query_situations + args.n_test_situations, replace=False)]
@@ -217,7 +237,7 @@ def main():
         out = []
         for s in test:
             F = X[s][cand[s]]
-            u = F @ theta
+            u = true_u(F, theta)
             i, j = pair_idx(len(F))
             du = u[i] - u[j]
             if theta_hat is None:
@@ -264,8 +284,11 @@ def main():
                 i, j = strat.select(F)
                 if strat.done():
                     continue
-                u = args.answer_scale * (F @ th)
-                strat.update(F, i, j, i if srng.random() < 1 / (1 + np.exp(-(u[i] - u[j]))) else j)
+                u = args.answer_scale * true_u(F, th)
+                p_i = 1 / (1 + np.exp(-(u[i] - u[j])))
+                if args.lapse:
+                    p_i = (1 - args.lapse) * p_i + args.lapse * 0.5
+                strat.update(F, i, j, i if srng.random() < p_i else j)
                 theta_hat = strat.theta_hat
         per = {c: np.asarray(v) for c, v in per.items()}
         curves[m] = {c: {mm: boot(v[:, k], rng) for k, mm in enumerate(METRICS[:3])} for c, v in per.items()}
@@ -275,7 +298,7 @@ def main():
             f"{c}: {curves[m][c]['agreement'][0]:.3f}/{curves[m][c]['answer_acc'][0]:.3f}" for c in checkpoints))
 
     paired = {}
-    for a, b in [("EUBO", "ActiveQuery"), ("EUBO", "Random"), ("EUBO", "DPO"), ("EUBO", "DPO-EUBO"), ("DPO", "Random")]:
+    for a, b in [("EUBO", "ActiveQuery"), ("EUBO", "Random"), ("EUBO", "InfoGain"), ("EUBO", "DPO"), ("EUBO", "DPO-EUBO"), ("DPO", "Random")]:
         if a in per_user and b in per_user:
             paired[f"{a} - {b}"] = {str(c): {mm: boot(per_user[a][c][:, k] - per_user[b][c][:, k], rng)
                                              for k, mm in enumerate(METRICS[:3])} for c in checkpoints if c > 0}

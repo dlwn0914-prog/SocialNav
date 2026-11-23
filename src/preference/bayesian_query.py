@@ -22,6 +22,13 @@ AISTATS 2023, "qEUBO"): ask the pair maximizing E_theta[max(u_i, u_j)].
 It is one-step Bayes-optimal for simple regret under noise-free answers,
 which is exactly our objective (pick one best candidate after N queries).
 Recommendation: argmax of posterior-mean utility.
+
+InfoGainStrategy -- the information-gain query of the active preference
+learning line (Sadigh et al. RSS 2017; Biyik et al. CoRL 2019): ask the pair
+maximizing the mutual information between the answer and theta,
+H(E_theta[p]) - E_theta[H(p)], p = sigmoid(theta . (phi_i - phi_j)), from the
+same posterior samples as EUBO. It targets learning theta everywhere, not the
+best option. Recommendation: argmax of posterior-mean utility.
 """
 import numpy as np
 
@@ -107,3 +114,24 @@ class EUBOStrategy(_LaplaceBase):
         np.fill_diagonal(eubo, -np.inf)
         i, j = np.unravel_index(np.argmax(eubo), eubo.shape)
         return int(i), int(j)
+
+
+def _entropy(p):
+    p = np.clip(p, 1e-12, 1 - 1e-12)
+    return -(p * np.log(p) + (1 - p) * np.log(1 - p))
+
+
+class InfoGainStrategy(_LaplaceBase):
+    def __init__(self, prior_std=1.0, n_samples=512, rng=None):
+        super().__init__(prior_std, rng)
+        self.n_samples = n_samples
+
+    def select(self, feats):
+        feats = np.asarray(feats, dtype=np.float64)
+        mean, cov = self._posterior(feats.shape[1])
+        utils = feats @ self.rng.multivariate_normal(mean, cov, size=self.n_samples).T  # (K, S)
+        i, j = np.triu_indices(len(feats), 1)
+        p = _sigmoid(utils[i] - utils[j])  # (pairs, S)
+        mi = _entropy(p.mean(axis=1)) - _entropy(p).mean(axis=1)
+        k = int(np.argmax(mi))
+        return int(i[k]), int(j[k])

@@ -1,0 +1,72 @@
+\section{방법}
+\label{sec:method}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_overview.pdf}
+  \caption{학습에 쓰지 않은(held-out) Grand Central 상황에서의 개요(로봇: 위쪽을 향하는 검은 원; 사람: 속도 표시가 있는 회색 원;
+  녹색 점선 화살표: 목적지 방향이며, 목적지는 화면 밖에 있다).
+  (a) VQ-VAE 코드북은 로봇의 상태로부터 $K=16$개의 후보 경로를 디코딩한다.
+  (b) 안전 필터는 등속 예측 하에서 모든 사람과 최소 0.5\,m 거리를 유지하고 진행량이 있는 경로만 남긴다.
+  (c) 이 상황에서 EUBO가 던질 질문: 더 나은 선택지의 기대 효용이 가장 높은 쌍.
+  (d) 다섯 개의 스타일 특징에 대한 베이지안 Bradley--Terry 모델이 선호 $\hat\theta$를 추정한다. 여기서는 사람 뒤로 지나가는 것과 작은 우회를 선호하는
+  예시 사용자 $\theta^\ast$가 다른 다섯 상황에서 다섯 번 답한 후의 추정이다.
+  (e) 그 다섯 상황에 포함되지 않은 이 상황에서, 로봇은 $\hat\theta$ 하에서 가장 좋은 안전한 경로를 실행한다. 이 경로는 가장 사람다운 경로
+  (인간 사전분포(human prior))와 다르다. \texttt{utils/figure\_overview.py}로 생성하였다.}
+  \label{fig:overview}
+\end{figure*}
+
+\subsection{문제 설정}
+상황 $s$에서 로봇은 자신의 상태(속력, 과거 두 위치), 목적지, 그리고 주변 사람들의 위치와 속도를 알고 있다.
+사용자는 로봇이 걷는 방식에 대한 선호를 가지며, 우리는 이를 스타일 특징에 대한 선형 효용으로 모델링한다.
+사용자는 몇 개의 질문 상황에서 소수의 A/B 질문(query)에 답하고, 이후 로봇은 사용자가 한 번도 질문받지 않은 새로운 상황에서
+자신의 경로를 선택해야 한다.
+
+\subsection{보행 행동 코드북}
+\label{sec:candidates}
+$K=16$개의 코드를 갖는 VQ-VAE~\citep{vandenoord2017neural}를, 진행 방향 좌표계에서 등속으로부터의 편차로 표현한
+보행자 미래 궤적(0.8\,s 간격 6개 점, 4.8\,s)으로 학습한다. 로봇의 현재 속력에서 모든 코드를 디코딩하면 $K$개의 후보 경로를 얻는다.
+같은 데이터로 목적지와 주변 사람 요약을 입력으로 하여 학습한 사전 네트워크 $p(\text{code} \mid s)$는
+각 후보가 그 상황에 있는 사람에게 얼마나 전형적인지를 점수화한다.
+코드북과 사전분포는 데이터셋마다 하나씩, 사람 단위 분할(약 80/10/10\%, 어떤 사람도 두 분할에 동시에 속하지 않음)의 학습 분할로 학습한다.
+모든 평가 상황은 테스트 분할에서 가져온다. 학습 샘플은 $\ge$0.5\,m/s로 걷고 있으며 미래 주석 6개를 사용할 수 있는 임의의 주석된 보행자와,
+6\,m 이내의 최대 12명의 사람으로 구성된다. VQ-VAE($K=16$개 코드, 8차원 잠재 변수)는 Adam(학습률 $10^{-3}$)으로
+Grand Central에서는 30 에폭(배치 1024), 더 작은 ETH/UCY에서는 150 에폭(배치 256) 동안 학습한다.
+사전분포는 256개 유닛의 은닉층 두 개를 갖는 MLP이며, Adam($10^{-3}$, weight decay $10^{-5}$)으로 30 에폭 동안,
+목적지가 의미를 가질 만큼 충분히 앞에 있는 샘플(Grand Central에서는 12\,s, ETH/UCY에서는 8\,s)로 학습한다.
+입력은 속력, 과거 두 위치, 목적지(트랙의 마지막 위치), 그리고 주변 사람에 대한 8개 수치 요약
+(앞쪽의 가장 가까운 사람, $<$1\,m 접근까지의 최소 시간, 앞쪽 좌측과 우측의 사람)이다. 데이터셋 크기는 Table~\ref{tab:data}에 있다.
+
+\paragraph{안전 필터.}
+사람들은 등속으로 외삽한다. 후보는 모든 사람과의 최소 거리가 $c=0.5$\,m 이상이고, 목적지를 향한
+진행량이 가장 좋은 후보의 $\rho=0.5$배 이상이면 안전하다. 선호는 안전한 후보들 중에서만 선택한다:
+\begin{equation}
+  \mathcal{C}(s) = \bigl\{ k \;:\; d_{\min}(s,k) \ge c,\; \mathrm{prog}(s,k) \ge \rho \max_{k'} \mathrm{prog}(s,k') \bigr\}.
+  \label{eq:safe}
+\end{equation}
+안전한 후보가 네 개 미만인 상황은 사용하지 않는다.
+
+\subsection{스타일 특징}
+각 안전한 후보는 $\phi(s,k) \in \mathbb{R}^5$로 기술되며, 어느 특징도 사전에 정해진 올바른 부호를 갖지 않는다:
+\emph{side}(최근접 시점에서 충돌 대상 사람으로부터의 횡방향 오프셋의 $\tanh$),
+\emph{front}(그 사람의 앞으로 가로지르는지 뒤로 가로지르는지), \emph{yield}(현재 속력 대비 평균 속력),
+\emph{detour}(목적지까지의 직선으로부터의 최대 편차), \emph{human}($\log p(\text{code}\mid s)$).
+특징은 질문 상황들의 안전한 후보들에 대해 표준화한다.
+
+\subsection{선호 학습과 질문 선택}
+\label{sec:preference}
+사용자의 효용은 $u(s,k) = \theta^\top \phi(s,k)$이다. 응답은 Bradley--Terry 모델~\citep{bradley1952rank}
+$P(i \succ j \mid \theta) = \sigma(\theta^\top(\phi_i - \phi_j))$을 따르며 사전분포는 $\theta \sim \mathcal{N}(0, I)$이다.
+사후분포는 라플라스 근사(MAP에는 뉴턴법, 공분산에는 역 헤시안)로 근사한다.
+각 질문은 최선 선택지의 기대 효용을 최대화하는 쌍을 묻는다~\citep{astudillo2023qeubo}:
+\begin{equation}
+  (i,j) = \operatorname*{arg\,max}_{i \ne j} \; \mathbb{E}_{\theta \sim p(\theta \mid \mathcal{D})}\bigl[\max\{u_i, u_j\}\bigr],
+\end{equation}
+이는 512개의 사후분포 샘플로 추정한다. 테스트 시에는 어떤 상황에서든 로봇은 다음을 실행한다.
+\begin{equation}
+  \hat k_n(s) = \operatorname*{arg\,max}_{k \in \mathcal{C}(s)} \hat\theta_n^{\top}\phi(s,k),
+  \label{eq:exec}
+\end{equation}
+여기서 $\hat\theta_n$은 $n$개의 응답 후의 사후분포 평균이다.
+
+\input{sections/regret}

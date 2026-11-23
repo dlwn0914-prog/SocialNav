@@ -1,0 +1,34 @@
+\section{추가 결과}
+
+\subsection{쌍별 일치도}
+\input{tables/agreement}
+
+\subsection{추정기 모델 밖의 사용자}
+\input{tables/robust}
+
+\subsection{ETH/UCY 목적지 시간 범위}
+\label{app:eth_dest}
+% Appendix: ETH/UCY with destination >= 12 s (as GC) vs >= 8 s (main text).
+% Sources: results/codebook/style/eth_{gauss,sparse}.json (12 s), results/codebook/dest8/eth_{gauss,sparse}.json (8 s)
+\begin{table}[h]
+\centering
+\caption{목적지가 최소 12\,s 앞에 있는 경우(Grand Central 설정; 48명의 테스트 보행자가 이러한 목적지를 가지며, 281개의 평가 상황은 그중 41명에게서 나온다)와 최소 8\,s 앞에 있는 경우(본문; 88명의 테스트 보행자, 그중 78명에게서 나온 590개 상황)의 ETH/UCY 결과. 5개 질문 후 학습에 쓰지 않은(held-out) 데이터에서의 쌍별 일치도(괄호 안은 20개). 5개 질문 후의 대응 차이와 200명의 합성 사용자에 대한 95\% 부트스트랩 CI.}
+\label{tab:eth_dest}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lcccc}
+\toprule
+ & \multicolumn{2}{c}{밀집 $\theta^*$} & \multicolumn{2}{c}{희소 $\theta^*$} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+방법 & $\geq$12\,s & $\geq$8\,s & $\geq$12\,s & $\geq$8\,s \\
+\midrule
+인간 사전분포만  & 0.532 & 0.536 & 0.529 & 0.527 \\
+무작위 질문    & 0.800 \scriptsize{(0.902)} & 0.816 \scriptsize{(0.903)} & 0.786 \scriptsize{(0.877)} & 0.780 \scriptsize{(0.872)} \\
+능동 질문 (AQ) & 0.822 \scriptsize{(0.911)} & 0.824 \scriptsize{(0.908)} & 0.789 \scriptsize{(0.874)} & 0.801 \scriptsize{(0.885)} \\
+EUBO (제안 방법)       & \textbf{0.850} \scriptsize{(0.915)} & \textbf{0.842} \scriptsize{(0.920)} & \textbf{0.822} \scriptsize{(0.886)} & \textbf{0.824} \scriptsize{(0.881)} \\
+\midrule
+EUBO $-$ AQ       & +0.028$^\dagger$ \scriptsize{[.012, .044]} & +0.019$^\dagger$ \scriptsize{[.005, .034]} & +0.033$^\dagger$ \scriptsize{[.017, .050]} & +0.023$^\dagger$ \scriptsize{[.008, .038]} \\
+EUBO $-$ Random   & +0.050$^\dagger$ \scriptsize{[.031, .069]} & +0.026$^\dagger$ \scriptsize{[.007, .046]} & +0.036$^\dagger$ \scriptsize{[.016, .055]} & +0.044$^\dagger$ \scriptsize{[.027, .063]} \\
+\bottomrule
+\end{tabular}
+\\[2pt]{\scriptsize $^\dagger$ 대응 차이의 95\% CI가 0을 포함하지 않는다.}
+\end{table}

@@ -47,9 +47,9 @@ a { color:var(--accent); }
 <main>
 
 <h1>Learning Individual Walking-Style Preferences for Crowd Navigation</h1>
-<div class="meta">연구 현황 총정리 · 2026-11-20 기준 · 코드 SocialNav <code>main e821a8f</code> (fork <code>dlwn0914-prog/SocialNav</code>) · OpenReview 제출 11/25까지 5일</div>
+<div class="meta">연구 현황 총정리 · 2026-11-23 기준 · 코드 SocialNav <code>main f84a0b3</code> + 11/23 저녁 수정분(미커밋) (fork <code>dlwn0914-prog/SocialNav</code>) · OpenReview 제출 11/25</div>
 
-<p class="lead">사람 보행 궤적으로 학습한 VQ-VAE 코드북이 안전하고 스타일이 다양한 후보 경로를 만들고, 사용자는 A/B 질문 몇 개에 답하며, 로봇은 EUBO로 고른 질문의 답으로 Bayesian Bradley–Terry 선호를 추정해 처음 보는 상황에서 경로를 고른다. 11/18 피드백 네 가지(파일럿 학습·테스트 분리, 문항 축소, DPO 비교, regret 정식 정의)와 추가 요청(Crowd-FM 후보 생성기 비교)을 모두 반영했다. 합성 사용자 기준으로 질문 5개면 regret이 0.45–0.47(사람 데이터 prior)에서 0.09–0.12로 내려가고, DPO보다 낮으며, 이득의 대부분은 질문 선택에서 나온다. 같은 장면에서 코드북 후보는 Crowd-FM 후보보다 regret이 0.20–0.26 낮다. 원고는 모든 절의 초안과 그림 1까지 들어갔고, 남은 큰 일은 인용 4곳, Overleaf 컴파일, 실제 사람 파일럿이다.</p>
+<p class="lead">사람 보행 궤적으로 학습한 VQ-VAE 코드북이 안전하고 스타일이 다양한 후보 경로를 만들고, 사용자는 A/B 질문 몇 개에 답하며, 로봇은 EUBO로 고른 질문의 답으로 Bayesian Bradley–Terry 선호를 추정해 처음 보는 상황에서 경로를 고른다. 11/18 피드백 네 가지(파일럿 학습·테스트 분리, 문항 축소, DPO 비교, regret 정식 정의)와 추가 요청(Crowd-FM 후보 생성기 비교)을 모두 반영했다. 합성 사용자 기준으로 질문 5개면 regret이 0.45–0.47(사람 데이터 prior)에서 0.09–0.12로 내려가고, DPO보다 낮으며, 이득의 대부분은 질문 선택에서 나온다. 같은 장면에서 코드북 후보는 Crowd-FM 후보보다 regret이 0.20–0.26 낮다. 11/23에 정보 이득(InfoGain) 질문을 베이스라인으로 추가했는데, 질문 5개에서 EUBO와 차이가 없고 20개에서는 InfoGain이 약간 낫다. 즉 이득은 "사후분포로 질문을 고르는 것"에서 나오며 EUBO 고유의 이점은 측정되지 않았다. 모델과 다르게 답하는 사용자(노이즈, 무작위 답, 비선형 효용) 12개 조건 중 11개에서 EUBO가 무작위·AQ·DPO보다 유의하게 낮다. 원고는 구조도(그림 1)와 모든 인용까지 들어가 TODO가 0개이고, 파일럿은 "진행 중"으로만 쓴다. 남은 일은 Overleaf 컴파일과 제출이다.</p>
 
 <nav class="toc" aria-label="목차"><ol>
 <li><a href="#status">한눈에 보는 상태</a></li>
@@ -76,8 +76,10 @@ a { color:var(--accent); }
 <tr><td>Crowd-FM vs VQ-VAE</td><td><span class="pill done">완료</span></td><td>GC 811장면, 2×3 비교, 합집합 regret (7절). ETH는 Crowd-FM 후보가 없어 미실시</td></tr>
 <tr><td>regret 정식 정의 + 곡선</td><td><span class="pill done">완료</span></td><td><code>paper/sections/regret.tex</code>, 그림 <code>paper/figures/fig_regret.pdf</code></td></tr>
 <tr><td>2D 폐루프</td><td><span class="pill done">완료</span></td><td>GC 300 / ETH 114 에피소드, 감속·정지 후보와 목표 근처 안전 확인 추가, 충돌 원인 분석 (8절)</td></tr>
-<tr><td>파일럿 v3 (20문항)</td><td><span class="pill part">배포, 응답 0</span></td><td>링크는 v3으로 교체됨. 비공개 상태라 공유를 열어야 참가자가 들어올 수 있음. IRB 미확인</td></tr>
-<tr><td>원고 (LaTeX)</td><td><span class="pill part">전 절 초안</span></td><td>초록·서론·관련 연구·방법·실험(파일럿 절 포함)·한계·결론 초안, 그림 1·2, 본문 표 4개와 부록 표 2개. 남은 것: 인용 4곳, 파일럿 결과, 컴파일 확인 (11절)</td></tr>
+<tr><td>정보 이득(InfoGain) 베이스라인</td><td><span class="pill done">완료</span></td><td>Sadigh et al. 방식(답과 θ의 상호정보량 최대). 질문 5개에서 EUBO와 동률, 20개에서 약간 나음 (5절)</td></tr>
+<tr><td>모델 밖 사용자 견고성</td><td><span class="pill done">완료</span></td><td>β=1·2·10, 무작위 답 20%, 비선형 효용 w=0.5·1, 두 데이터셋 = 12조건. 부록 표 (5절)</td></tr>
+<tr><td>파일럿 v3 (20문항)</td><td><span class="pill part">수집 중, 2명</span></td><td>논문에는 "진행 중"으로만 기술(결과 미보고). 로그인 없는 공개판을 GitHub Pages로 배포. IRB 미확인</td></tr>
+<tr><td>원고 (LaTeX)</td><td><span class="pill done">전 절 완료, TODO 0</span></td><td>그림 3개(구조도·개요도·regret 곡선), 본문 표 4개와 부록 표 3개, 인용 전부 입력. 남은 것: Overleaf 컴파일과 템플릿 (11절). 한국어 번역본 별도 아티팩트</td></tr>
 <tr><td>서버 GPU</td><td><span class="pill todo">문제</span></td><td>드라이버(커널 580.173)와 라이브러리(580.178) 버전 불일치로 <code>nvidia-smi</code> 실패. 재부팅 필요(공용 서버라 관리자 조율)</td></tr>
 </table></div>
 
@@ -128,6 +130,7 @@ a { color:var(--accent); }
 <tr><td>BT + AQ</td><td class="n">0.112 (0.041)</td><td class="n">0.144 (0.059)</td><td class="n">0.109 (0.034)</td><td class="n">0.126 (0.053)</td></tr>
 <tr><td>DPO + 무작위 질문</td><td class="n">0.144 (0.053)</td><td class="n">0.174 (0.080)</td><td class="n">0.116 (0.046)</td><td class="n">0.151 (0.081)</td></tr>
 <tr><td>DPO + EUBO 질문</td><td class="n">0.106 (0.041)</td><td class="n">0.117 (0.064)</td><td class="n">0.087 (0.032)</td><td class="n">0.114 (0.068)</td></tr>
+<tr><td>BT + 정보 이득 (InfoGain)</td><td class="n">0.096 (0.023)</td><td class="n">0.122 (0.045)</td><td class="n">0.087 (0.024)</td><td class="n">0.108 (0.049)</td></tr>
 <tr class="hl"><td>BT + EUBO (ours)</td><td class="n">0.096 (0.031)</td><td class="n">0.118 (0.051)</td><td class="n">0.088 (0.029)</td><td class="n">0.103 (0.065)</td></tr>
 <tr><td>정답 θ*</td><td class="n">0.000</td><td class="n">0.000</td><td class="n">0.000</td><td class="n">0.000</td></tr>
 </table></div>
@@ -136,11 +139,33 @@ a { color:var(--accent); }
 <tr><th>비교</th><th class="n">GC dense</th><th class="n">GC sparse</th><th class="n">ETH dense</th><th class="n">ETH sparse</th></tr>
 <tr><td>EUBO − 무작위</td><td class="n ok">−0.058</td><td class="n ok">−0.060</td><td class="n ok">−0.037</td><td class="n ok">−0.061</td></tr>
 <tr><td>EUBO − AQ</td><td class="n">−0.016</td><td class="n ok">−0.026</td><td class="n ok">−0.021</td><td class="n ok">−0.024</td></tr>
+<tr><td>EUBO − InfoGain</td><td class="n">0.000</td><td class="n">−0.004</td><td class="n">+0.001</td><td class="n">−0.006</td></tr>
 <tr><td>EUBO − DPO</td><td class="n ok">−0.048</td><td class="n ok">−0.056</td><td class="n ok">−0.028</td><td class="n ok">−0.049</td></tr>
 <tr><td>EUBO − DPO+EUBO 질문</td><td class="n ok">−0.010</td><td class="n">+0.001</td><td class="n">0.000</td><td class="n ok">−0.011</td></tr>
 </table></div>
 <p>질문 20개에서는 EUBO − AQ가 ETH sparse에서 +0.012(AQ가 약간 나음, 유의)로 뒤집힌다. 질문이 많아지면 방법 간 차이는 줄어든다.</p>
-<figure><img src="{{FIG_REGRET}}" alt="네 설정에서 질문 수(0, 2, 5, 10, 20)에 따른 simple regret 곡선. 모든 방법이 0.5 부근에서 시작해 빠르게 내려가며, BT+EUBO와 DPO+EUBO 질문이 가장 낮고 BT+무작위와 DPO+무작위가 가장 높다.">
+<p><b>정보 이득(InfoGain)과의 비교 (11/23 추가).</b> 질문 5개에서 EUBO − InfoGain은 −0.006~+0.001로 네 설정 모두 비유의다. 질문 20개에서는 +0.005~+0.016으로 InfoGain이 약간 낫고 세 설정에서 유의하다. 따라서 "EUBO라서 낫다"가 아니라 "사후분포로 질문을 고르면 낫다"가 정확한 주장이다. 원고 본문과 초록도 이렇게 고쳤다. 질문 하나 고르는 데 EUBO 약 0.2 ms, InfoGain 약 1 ms (후보 16개, CPU 1코어).</p>
+<h3>모델 밖 사용자에 대한 견고성 (11/23 추가)</h3>
+<p>본 실험의 가상 사용자는 추정기가 가정한 대로(선형 효용, β=5) 답한다. 이를 바꿔 dense 사용자 200명씩, 질문 5개 후 regret을 쟀다. <span class="ok">†</span> = EUBO의 95% CI가 무작위·AQ·DPO보다 모두 낮음.</p>
+<div class="tw"><table>
+<tr><th>사용자</th><th class="n">무작위</th><th class="n">AQ</th><th class="n">DPO</th><th class="n">InfoGain</th><th class="n">EUBO</th><th class="n">오라클</th></tr>
+<tr><td colspan="7"><b>Grand Central</b></td></tr>
+<tr><td>답변 노이즈 β=1</td><td class="n">0.336</td><td class="n">0.232</td><td class="n">0.325</td><td class="n">0.176</td><td class="n ok">0.182 †</td><td class="n">0</td></tr>
+<tr><td>β=2</td><td class="n">0.241</td><td class="n">0.155</td><td class="n">0.232</td><td class="n">0.120</td><td class="n ok">0.128 †</td><td class="n">0</td></tr>
+<tr><td>β=10</td><td class="n">0.130</td><td class="n">0.101</td><td class="n">0.122</td><td class="n">0.091</td><td class="n ok">0.085 †</td><td class="n">0</td></tr>
+<tr><td>무작위 답 20%</td><td class="n">0.237</td><td class="n">0.196</td><td class="n">0.234</td><td class="n">0.141</td><td class="n ok">0.137 †</td><td class="n">0</td></tr>
+<tr><td>비선형 효용 w=0.5</td><td class="n">0.238</td><td class="n">0.207</td><td class="n">0.227</td><td class="n">0.173</td><td class="n ok">0.180 †</td><td class="n">0.090</td></tr>
+<tr><td>비선형 효용 w=1</td><td class="n">0.342</td><td class="n">0.332</td><td class="n">0.334</td><td class="n">0.301</td><td class="n ok">0.303 †</td><td class="n">0.207</td></tr>
+<tr><td colspan="7"><b>ETH/UCY</b></td></tr>
+<tr><td>답변 노이즈 β=1</td><td class="n">0.317</td><td class="n">0.273</td><td class="n">0.299</td><td class="n">0.174</td><td class="n ok">0.206 †</td><td class="n">0</td></tr>
+<tr><td>β=2</td><td class="n">0.207</td><td class="n">0.161</td><td class="n">0.192</td><td class="n">0.104</td><td class="n ok">0.121 †</td><td class="n">0</td></tr>
+<tr><td>β=10</td><td class="n">0.098</td><td class="n">0.094</td><td class="n">0.095</td><td class="n">0.080</td><td class="n">0.085</td><td class="n">0</td></tr>
+<tr><td>무작위 답 20%</td><td class="n">0.205</td><td class="n">0.218</td><td class="n">0.189</td><td class="n">0.124</td><td class="n ok">0.148 †</td><td class="n">0</td></tr>
+<tr><td>비선형 효용 w=0.5</td><td class="n">0.242</td><td class="n">0.217</td><td class="n">0.239</td><td class="n">0.191</td><td class="n ok">0.184 †</td><td class="n">0.095</td></tr>
+<tr><td>비선형 효용 w=1</td><td class="n">0.348</td><td class="n">0.347</td><td class="n">0.346</td><td class="n">0.328</td><td class="n ok">0.317 †</td><td class="n">0.218</td></tr>
+</table></div>
+<p>12조건 중 11개에서 EUBO가 무작위·AQ·DPO보다 유의하게 낮다(예외: ETH β=10, 모든 방법이 0.013 이내). 답이 시끄러울수록 모두 나빠지고, ETH에서 노이즈가 크거나 무작위 답이 섞이면 InfoGain이 EUBO보다 0.017–0.032 낫다(유의). 비선형 효용에서는 선형 모델의 한계(오라클 0.09–0.22) 쪽으로 모두 수렴한다. 결과 <code>results/codebook/robust/</code>, 표 <code>paper/tables/robust.tex</code>.</p>
+<figure><img src="{{FIG_REGRET}}" alt="네 설정에서 질문 수(0, 2, 5, 10, 20)에 따른 simple regret 곡선. 모든 방법이 0.5 부근에서 시작해 빠르게 내려가며, BT+EUBO, BT+정보 이득, DPO+EUBO 질문이 가장 낮고 BT+무작위와 DPO+무작위가 가장 높다.">
 <figcaption>질문 수에 따른 simple regret. 음영은 사용자 단위 95% 부트스트랩. 점선은 사람 prior만 쓸 때. 질문 0개는 θ̂이 없어 무작위 선택(약 0.5).</figcaption></figure>
 
 <h2 id="dpo">6. DPO 비교 해석</h2>
@@ -254,8 +279,9 @@ a { color:var(--accent); }
 <p>참가자 한 명의 측정 테스트 정확도 표준편차는 v2(14문항) 0.10–0.12, v3(8문항) 0.135–0.14. 개인별 수치는 잡음이 크고, 집단 평균으로 봐야 한다.</p>
 <h3>상태</h3>
 <ul>
-<li>링크: <a href="https://claude.ai/artifact/F4mKcyyLz1PBuma7geR987">파일럿 v3</a> (비공개, 공유를 열어야 참가자 접근 가능). 오프라인판 <code>results/codebook/pilot_v3/pilot_offline.html</code>.</li>
-<li>응답 0건. v2 시절 응답 1건(p01, 60문항 중 28개)은 임시 폴더에 백업했고 git에는 넣지 않았다. p01이 링크를 다시 열면 DB의 v2 응답은 지워진다.</li>
+<li>링크: <a href="https://claude.ai/artifact/F4mKcyyLz1PBuma7geR987">파일럿 v3</a> (claude.ai 로그인 필요, 응답 자동 저장). 로그인 없는 공개판: <code>https://dlwn0914-prog.github.io/SocialNav/pilot/</code> (GitHub Pages, 끝나면 참가자가 결과를 복사해 전달).</li>
+<li>11/23 기준 응답 2건(p01, P02, 둘 다 20/20, 순서 확인 통과). 11/24에 3–4명 추가 예정. 원고에는 결과를 넣지 않고 "진행 중"으로만 쓴다(b안).</li>
+<li>이전 기록: v2 시절 응답 1건(p01, 60문항 중 28개)은 임시 폴더에 백업했고 git에는 넣지 않았다. p01이 링크를 다시 열면 DB의 v2 응답은 지워진다.</li>
 <li>IRB 미확인. 확인 전에는 논문에 "면제"라고 쓰지 않는다.</li>
 <li>11/20 버그 수정: 일부 문항에서 그림이 안 뜨던 문제(첫 애니메이션 프레임 시각이 문항 표시 시각보다 앞서면 음수 시간으로 그리기가 멈춤)를 고쳤다. 20문항 모두 헤드리스 브라우저로 확인. v2 페이지에도 같은 버그가 있었으므로 v2 응답 p01은 일부 문항을 그림 없이 답했을 수 있다(v3 분석에는 쓰지 않음).</li>
 </ul>
@@ -275,30 +301,22 @@ a { color:var(--accent); }
 <p>스타일 특징 중 목적지를 쓰는 것은 detour뿐이고 방향만 쓴다. 그래서 거리는 영향이 없고 방향은 크다. 목적지를 화면 안 가까운 점으로 찍으면 참가자가 "도착을 잘 하나"로 고르게 되어 스타일 선호가 효율과 섞이므로, 멀리 두고 방향만 보여 주는 지금 구조를 유지했다. human 특징(prior)은 목적지 거리도 입력으로 받지만 12초 이상 목적지로만 학습했으므로, 가까운 목적지에서는 믿기 어렵다.</p>
 
 <h2 id="paper">11. 원고 상태 (<code>paper/</code>, LaTeX)</h2>
+<p>모든 절이 들어갔고 <code>\todo</code>는 0개다. 원고 미리보기: <a href="https://claude.ai/artifact/AaZushbDLnkGy9QcpNZUqv">원고 HTML</a>. 한국어 번역본은 별도 아티팩트.</p>
 <div class="tw"><table>
-<tr><th style="width:30%">파일</th><th style="width:16%">상태</th><th>내용 / 남은 것</th></tr>
-<tr><td><code>sections/abstract.tex</code></td><td><span class="pill done">초안</span></td><td>regret 기준, DPO·생성기·폐루프 결과 포함 (약 220단어)</td></tr>
-<tr><td><code>sections/intro.tex</code></td><td><span class="pill done">완료</span></td><td>동기(사람마다 다른 주행 선호), 기존 방법의 한계, 핵심 아이디어(할 수 있는 것과 원하는 것의 분리), 결과 요약, 기여 3개. 그림 1 참조. 남은 인용: Crowd-FM 1곳</td></tr>
-<tr><td><code>sections/related.tex</code></td><td><span class="pill done">완료</span></td><td>군중 내비게이션(서베이, Social Force, ORCA, 강화학습·역강화학습, 궤적 예측, diffusion·flow matching), 선호 학습(BT, RLHF, DPO와 우리 설정의 차이), 능동 질문, VQ-VAE. 남은 인용: Crowd-FM, PRIEST, UserAlign, 궤적 코드북</td></tr>
-<tr><td><code>sections/method.tex</code></td><td><span class="pill done">완료</span></td><td>그림 1, 문제 설정, 코드북과 학습 세부(데이터 분할, 최적화, prior 입력), 안전 필터(식 번호 <code>eq:safe</code>), 특징, BT + EUBO, 실행 경로(<code>eq:exec</code>)</td></tr>
-<tr><td><code>sections/regret.tex</code></td><td><span class="pill done">완료</span></td><td>평가용 사용자 모델, simple regret 식, 질문·테스트 상황 분리, 왜 simple regret인가, 변형 3가지, 그림 2. 방법 절과 겹치던 문단 정리</td></tr>
-<tr><td><code>sections/experiments.tex</code></td><td><span class="pill done">초안</span></td><td>데이터 표, Q1 질문 방법, Q2 DPO, Q3 생성기, Q4 폐루프, 파일럿 절(절차·학습/테스트 분리·측정·검정력). 결과 단락과 참가자 수·IRB는 TODO</td></tr>
-<tr><td><code>sections/limitations.tex</code>, <code>conclusion.tex</code></td><td><span class="pill done">초안</span></td><td>파일럿 상태와 다음 단계 한 문장씩 TODO</td></tr>
-<tr><td><code>sections/appendix.tex</code></td><td><span class="pill done">완료</span></td><td>일치율 표, ETH 목적지 기준(8초 vs 12초) 표. 보행자 수 기준을 본문 데이터 표와 맞춤</td></tr>
-<tr><td>표 (<code>tables/*.tex</code> + 데이터 표)</td><td><span class="pill done">완료</span></td><td>regret, 일치율, 생성기, 폐루프는 <code>utils/make_paper_tables.py</code>로 결과 JSON에서 자동 생성. 데이터 표는 데이터 파일에서 재계산한 값</td></tr>
-<tr><td>그림 1 (<code>figures/fig_overview.pdf</code>)</td><td><span class="pill done">완료</span></td><td>실제 GC 상황 하나로 (a) 코드북 16개 → (b) 안전 9개 → (c) EUBO 질문 → (d) θ* vs θ̂ → (e) 실행 경로. <code>utils/figure_overview.py</code></td></tr>
-<tr><td>그림 2 (<code>figures/fig_regret.pdf</code>)</td><td><span class="pill done">완료</span></td><td>질문 수에 따른 simple regret (5절 그림)</td></tr>
-<tr><td><code>refs.bib</code></td><td><span class="pill part">24개</span></td><td>기억에 의존한 서지라 제출 전 출판사 페이지와 대조 필요. Crowd-FM, PRIEST, UserAlign, 궤적 코드북 미입력</td></tr>
+<tr><th style="width:30%">파일</th><th style="width:16%">상태</th><th>내용</th></tr>
+<tr><td><code>sections/abstract.tex</code></td><td><span class="pill done">완료</span></td><td>regret, DPO, 정보 이득 동률, 견고성, 생성기, 폐루프 결과</td></tr>
+<tr><td><code>sections/intro.tex</code></td><td><span class="pill done">완료</span></td><td>그림 1(구조도) 포함. 동기, 핵심 아이디어, 결과 요약, 기여 3개</td></tr>
+<tr><td><code>sections/related.tex</code></td><td><span class="pill done">완료</span></td><td>군중 내비게이션(Crowd-FM, PRIEST 포함), 선호 학습, 능동 질문(UserAlign), 이산 행동 표현(모션 프리미티브, MultiPath, CoverNet, MotionLM, VQ 궤적 예측)</td></tr>
+<tr><td><code>sections/method.tex</code>, <code>regret.tex</code></td><td><span class="pill done">완료</span></td><td>그림 2(실제 상황 개요도), 코드북과 학습 세부, 안전 필터, 특징, BT + EUBO, simple regret 정의, 그림 3(regret 곡선)</td></tr>
+<tr><td><code>sections/experiments.tex</code></td><td><span class="pill done">완료</span></td><td>데이터 표, Q1(정보 이득 포함), Q2 DPO + 모델 밖 사용자, Q3 생성기, Q4 폐루프, 사용자 연구 절차(진행 중, 결과 미보고)</td></tr>
+<tr><td><code>limitations.tex</code>, <code>conclusion.tex</code></td><td><span class="pill done">완료</span></td><td>합성 사용자 한계(견고성 표 언급), 파일럿 진행 중, 다음 단계</td></tr>
+<tr><td><code>sections/appendix.tex</code></td><td><span class="pill done">완료</span></td><td>일치율 표, 견고성 표, ETH 목적지 기준 표</td></tr>
+<tr><td><code>refs.bib</code></td><td><span class="pill done">33개</span></td><td>11/23에 추가한 9개(코드북 5, Crowd-FM, PRIEST, UserAlign 등)는 arXiv/출판사 페이지로 확인. 기존 24개는 기억 기반이라 제출 전 대조 권장</td></tr>
 </table></div>
-<figure><img src="{{FIG_OVERVIEW}}" alt="그림 1. 그랜드센트럴 상황 하나에서 코드북 후보 16개, 안전 필터 후 9개, EUBO가 고른 A/B 두 경로, 예시 사용자 θ*와 추정 θ̂의 특징별 막대, 그리고 θ̂ 기준으로 실행한 경로와 사람 prior가 고른 경로를 나란히 보여 주는 다섯 칸 그림.">
-<figcaption>그림 1 (원고 방법 절). (d)의 θ*는 그림을 위한 예시 사용자이고, θ̂은 다른 상황 5개에서 받은 답으로 추정했다. (e)의 상황은 그 5개에 포함되지 않는다.</figcaption></figure>
-<h3>원고에 남은 TODO</h3>
-<ul>
-<li><b>인용 4곳:</b> Crowd-FM, PRIEST, UserAlign(AQ), 궤적·동작 코드북 관련 연구. 정확한 서지가 필요하다.</li>
-<li><b>파일럿:</b> 참가자 수와 모집 대상, IRB 상태, 결과 수치. 응답을 못 모으면 절차 단락만 남기고 "진행 중"으로 쓰고, 주장은 한계 절로 옮긴다.</li>
-<li><b>한계·결론:</b> 파일럿 상태와 다음 단계 한 문장씩.</li>
-<li><b>컴파일:</b> 서버에 LaTeX가 없어 Overleaf에서 확인 필요. <code>\ref</code>/<code>\label</code>, 인용 키, 중괄호 짝은 스크립트로 확인했다.</li>
-</ul>
+<figure><img src="{{FIG_ARCH}}" alt="그림 1 구조도. 왼쪽 오프라인 단계에서 보행자 데이터로 VQ-VAE 코드북을 학습하고, 가운데 모든 상황에서 후보 16개를 디코딩해 안전 필터와 스타일 특징을 거치며, 오른쪽 위 질문 단계에서 EUBO가 A/B 쌍을 고르고 사용자가 답해 Bayesian Bradley–Terry 사후분포를 갱신하고, 오른쪽 아래 배포 단계에서 새 상황에 θ̂ 기준 최선의 안전 경로를 실행한다.">
+<figcaption>그림 1 (서론, 11/23 추가). <code>utils/figure_architecture.py</code>. 후보 묶음은 실제 GC 코드북 16개를 1.2 m/s에서 디코딩한 것이다.</figcaption></figure>
+<figure><img src="{{FIG_OVERVIEW}}" alt="그림 2. 그랜드센트럴 상황 하나에서 코드북 후보 16개, 안전 필터 후 9개, EUBO가 고른 A/B 두 경로, 예시 사용자 θ*와 추정 θ̂의 특징별 막대, 그리고 θ̂ 기준으로 실행한 경로와 사람 prior가 고른 경로를 나란히 보여 주는 다섯 칸 그림.">
+<figcaption>그림 2 (방법 절). (d)의 θ*는 예시 사용자이고, θ̂은 다른 상황 5개에서 받은 답으로 추정했다.</figcaption></figure>
 
 <h2 id="claims">12. 주장할 수 있는 것과 없는 것</h2>
 <div class="tw"><table>
@@ -306,20 +324,21 @@ a { color:var(--accent); }
 <tr><td>질문 5개로 처음 보는 상황의 regret이 prior 대비 크게 줄어든다 (합성 사용자)</td><td>실제 사람에서도 그렇다 (파일럿 전)</td></tr>
 <tr><td>같은 질문 수에서 EUBO가 DPO보다 낮다. 이득의 대부분은 질문 선택에서 나온다</td><td>Bradley–Terry 추정이 DPO 추정보다 우월하다 (같은 질문이면 거의 같음)</td></tr>
 <tr><td>EUBO는 무작위 질문보다 4개 설정 모두, AQ보다 3개 설정에서 낫다 (질문 5개)</td><td>EUBO가 AQ를 항상 이긴다 (GC dense 5개 비유의, ETH sparse 20개는 AQ가 나음)</td></tr>
+<tr><td>사후분포로 질문을 고르는 것(EUBO 또는 정보 이득)이 핵심이다</td><td>EUBO가 정보 이득보다 낫다 (5개 동률, 20개는 정보 이득이 약간 나음)</td></tr>
+<tr><td>노이즈·무작위 답·비선형 효용 사용자에서도 무작위·AQ·DPO보다 낫다 (12조건 중 11)</td><td>실제 사람에게도 견고하다 (여전히 시뮬레이션)</td></tr>
 <tr><td>같은 GC 장면에서 코드북 후보가 Crowd-FM 후보보다 합집합 regret이 낮고, 원인은 후보 범위다</td><td>모든 데이터셋에서 그렇다 (GC만), 합집합 regret만으로 판단 (범위 한계 행을 함께)</td></tr>
 <tr><td>폐루프에서 선호를 따라도 충돌률이 유의하게 늘지 않는다</td><td>안전한 플래너다 (GC 로봇 원인 충돌이 실제 보행자의 2배)</td></tr>
 <tr><td>파일럿 데이터 수집 계획</td><td>IRB 면제 (확인 전)</td></tr>
 </table></div>
 
-<h2 id="todo">13. 남은 일과 일정 (11/25 제출)</h2>
+<h2 id="todo">13. 남은 일 (11/25 제출)</h2>
 <div class="tw"><table>
 <tr><th style="width:8%">우선</th><th style="width:44%">일</th><th>메모</th></tr>
-<tr><td>1</td><td>빠진 인용 4곳 (Crowd-FM, PRIEST, UserAlign, 궤적 코드북)과 기존 24개 서지 대조</td><td>관련 연구·그림 1·데이터 표·regret 정리는 완료</td></tr>
-<tr><td>2</td><td>Overleaf 컴파일, 분량·표·그림 배치 정리</td><td>두 단 폭 그림 1, 본문 표 4개와 부록 표 2개</td></tr>
-<tr><td>3</td><td>한계·결론의 남은 한 문장씩</td><td>파일럿 결과에 따라</td></tr>
-<tr><td>4</td><td>파일럿: 공유 열기 → 참가자 모집 → <code>utils/analyze_pilot.py</code></td><td>IRB 확인 여부에 따라 논문 포함 결정. 못 넣으면 한계 절로</td></tr>
-<tr><td>5</td><td>초록 최종 수정 (OpenReview 입력)</td><td>파일럿 결과가 있으면 한 문장 추가</td></tr>
-<tr><td>선택</td><td>GPU 복구 후 ETH에서 Crowd-FM 비교, 불확실성 반영 안전 필터</td><td>재부팅은 관리자와 조율</td></tr>
+<tr><td>1</td><td>Overleaf 컴파일, 학회 템플릿 적용, 페이지 수 확인</td><td>그림 3개(두 단 폭 2개), 본문 표 4개, 부록 표 3개</td></tr>
+<tr><td>2</td><td>익명성 최종 점검</td><td>이름·연구실·GitHub 주소·파일럿 링크가 원고에 없어야 함</td></tr>
+<tr><td>3</td><td>기존 서지 24개 대조</td><td>새로 넣은 9개는 확인 완료</td></tr>
+<tr><td>4</td><td>OpenReview 초록 입력</td><td><code>sections/abstract.tex</code> 그대로</td></tr>
+<tr><td>계속</td><td>파일럿 응답 수집 (11/24에 3–4명)</td><td>논문에는 미보고. IRB 확인 후 다음 버전에 15–20명으로</td></tr>
 </table></div>
 
 <h2 id="where">14. 코드·결과 위치와 커밋</h2>
@@ -354,6 +373,8 @@ a { color:var(--accent); }
 <tr><td><code>a1f56b2</code></td><td>원고: 파일럿 절 (절차와 분석 계획)</td></tr>
 <tr><td><code>9cb0b36</code></td><td>원고: regret 절 중복 정리, 식 번호</td></tr>
 <tr><td><code>e821a8f</code></td><td>원고: 학습 세부와 데이터 표, 부록 보행자 수 기준</td></tr>
+<tr><td><code>4c4913d</code>–<code>f84a0b3</code></td><td>보고서 갱신, 파일럿 b안(진행 중) 반영, 원고 HTML 미리보기, 코드북 인용 5개, 공개용 파일럿</td></tr>
+<tr><td>(미커밋, 11/23 저녁)</td><td>정보 이득 베이스라인, 견고성 12조건, 그림 1 구조도, Crowd-FM·PRIEST·UserAlign 인용, 한국어 번역본</td></tr>
 </table></div>
 <p class="note"><code>data/</code>(13 GB)와 <code>model/</code>(8.9 GB)는 Hugging Face에서 받은 외부 데이터·체크포인트로, GitHub 파일 크기 제한(100 MB)을 넘어 커밋하지 않았다.</p>
 

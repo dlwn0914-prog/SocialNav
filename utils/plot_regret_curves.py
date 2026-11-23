@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 # reference categorical palette, fixed order (dataviz skill)
 SERIES = [("EUBO", "BT + EUBO (ours)", "#2a78d6"), ("ActiveQuery", "BT + AQ", "#eb6834"),
           ("Random", "BT + Random", "#1baf7a"), ("DPO", "DPO + Random", "#eda100"),
-          ("DPO-EUBO", "DPO + EUBO queries", "#e87ba4")]
+          ("DPO-EUBO", "DPO + EUBO queries", "#e87ba4"), ("InfoGain", "BT + information gain", "#7f63d1")]
 PANELS = [("gc_gauss", "Grand Central, dense $\\theta^*$"), ("gc_sparse", "Grand Central, sparse $\\theta^*$"),
           ("eth_gauss", "ETH/UCY, dense $\\theta^*$"), ("eth_sparse", "ETH/UCY, sparse $\\theta^*$")]
 INK, MUTED, GRID = "#0b0b0b", "#52514e", "#e4e3df"
@@ -23,7 +23,7 @@ INK, MUTED, GRID = "#0b0b0b", "#52514e", "#e4e3df"
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--dir", default="results/codebook/dpo")
+    p.add_argument("--dir", default="results/codebook/infogain")
     p.add_argument("--out", default="reports/fig_regret")
     args = p.parse_args()
 
@@ -41,7 +41,7 @@ def main():
             mean = [cu[str(k)]["regret"][0] for k in q]
             ax.fill_between(q, [cu[str(k)]["regret"][1] for k in q], [cu[str(k)]["regret"][2] for k in q],
                             color=c, alpha=0.15, lw=0)
-            ax.plot(q, mean, color=c, lw=2, marker="o", ms=4, label=label)
+            ax.plot(q, mean, color=c, lw=2, marker="o", ms=4, label=label, zorder=5 if m == "EUBO" else 3)
         ax.set_title(title, color=INK, fontsize=9)
         ax.set_xticks(q)
         ax.set_xlabel("number of queries $n$")
@@ -51,8 +51,8 @@ def main():
     axes[0].set_ylabel("simple regret $\\mathrm{SR}_n$")
     axes[0].set_ylim(0, None)
     h, l = axes[0].get_legend_handles_labels()
-    fig.legend(h, l, loc="lower center", ncol=5, frameon=False, bbox_to_anchor=(0.5, -0.02))
-    fig.tight_layout(rect=(0, 0.08, 1, 1))
+    fig.legend(h, l, loc="lower center", ncol=6, frameon=False, bbox_to_anchor=(0.5, -0.01))
+    fig.tight_layout(rect=(0, 0.07, 1, 1))
     for ext in ("pdf", "png"):
         fig.savefig(f"{args.out}.{ext}", dpi=200, bbox_inches="tight")
     print(f"saved {args.out}.pdf/.png")

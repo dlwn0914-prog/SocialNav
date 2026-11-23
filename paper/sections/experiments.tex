@@ -39,13 +39,20 @@ answering with $\beta=5$ (Sec.~\ref{sec:regret}). Per user, 10 query situations 
 200 users per setting; 95\% bootstrap CIs over users.
 
 \paragraph{Baselines.} \emph{Random}: uniformly random pairs. \emph{AQ}: a version-space active query that asks the current best
-against its strongest challenger. \todo{cite UserAlign} Both use the same Bradley--Terry estimator as EUBO.
+against its strongest challenger~\citep{padurean2025useralign}. \emph{InfoGain}: the pair whose answer is most informative about
+$\theta$, i.e.\ with the largest mutual information between answer and $\theta$ under the posterior~\citep{sadigh2017active}, estimated from
+the same 512 posterior samples as EUBO. All three use the same Bradley--Terry estimator as EUBO. Choosing a question takes about 0.2\,ms
+with EUBO and 1\,ms with InfoGain for 16 candidates on one CPU core (AMD Ryzen 7 9700X), so neither delays an interactive session.
 
 \subsection{Q1: Query selection}
 Table~\ref{tab:regret} and Fig.~\ref{fig:regret}. The human-data prior alone leaves a simple regret of 0.45--0.47, close to a random
 safe candidate (0.49): the most typical path is not what a given user prefers. Five EUBO queries reduce it to 0.09--0.12 and twenty to
 0.03--0.07. With five queries EUBO has lower regret than random queries in all four settings ($-$0.037 to $-$0.061) and than AQ in three
 of four ($-$0.021 to $-$0.026; GC dense $-$0.016, n.s.). The gap closes with more queries (20 queries: Table~\ref{tab:regret}, parentheses).
+InfoGain, which targets $\theta$ rather than the best option, does as well as EUBO after five queries (EUBO $-$ InfoGain $-$0.006 to
++0.001, no CI excludes 0) and slightly better after twenty (+0.005 to +0.016, CI excludes 0 in three of four settings).
+In our setting the gain therefore comes from choosing questions with the posterior; EUBO's simple-regret target gives no measurable
+advantage over learning $\theta$ itself at these budgets.
 Pairwise agreement shows the same ordering (Appendix, Table~\ref{tab:agreement}).
 
 \input{tables/regret}
@@ -64,9 +71,17 @@ With the same random questions, DPO and Bradley--Terry are close after five quer
 (agreement $-$0.005 to $-$0.016). EUBO has lower regret than DPO in all settings ($-$0.028 to $-$0.056 at five queries).
 Given EUBO's questions, DPO comes within 0.011 of EUBO: most of the gain comes from choosing the questions, not from the estimator.
 
+\paragraph{Users outside the model.}
+The users above answer exactly as the estimator assumes. Table~\ref{tab:robust} (Appendix) changes the users on both datasets: noisier
+or more consistent answers ($\beta=1,2,10$), 20\% random answers, and true utilities with pairwise feature interactions, which no linear
+$\theta$ represents. After five queries EUBO's regret stays below Random, AQ and DPO (95\% CI) in 11 of 12 conditions; the exception is
+ETH/UCY with $\beta=10$, where all methods are within 0.013. Noisy answers raise every method's regret (EUBO 0.18--0.21 at $\beta=1$), and
+on ETH/UCY InfoGain is more robust to them than EUBO (by 0.017--0.032 at $\beta \le 2$ and with random answers). With interactions, every
+method approaches the floor set by the best linear $\theta$ (oracle 0.09--0.22).
+
 \subsection{Q3: Candidate generator}
-Table~\ref{tab:generator}. We compare the codebook with the candidates of a flow-matching crowd-navigation planner
-\todo{name + cite Crowd-FM; 20 samples refined by PRIEST \todo{cite}} on the 900 GC scenes for which those candidates exist
+Table~\ref{tab:generator}. We compare the codebook with the candidates of a flow-matching crowd-navigation planner,
+Crowd-FM~\citep{singha2026crowdfm} (20 samples, refined by PRIEST~\citep{rastgar2024priest}), on the 900 GC scenes for which those candidates exist
 (150 people $\times$ 6 frames; 811 where both generators have $\ge$4 safe candidates). To make the comparison fair, both are evaluated on
 the planner's 3\,s horizon with the people it was given, the same safety filter, and the four features that both can compute
 (\emph{human} needs the codebook prior). Because regret normalized within each generator's own set rewards narrow sets, we report

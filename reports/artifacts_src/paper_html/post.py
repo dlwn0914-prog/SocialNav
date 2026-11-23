@@ -29,7 +29,11 @@ body = re.sub(r'<h([45])[^>]*>(.*?)</h\1>\s*<p>', r'<p><strong class="runin">\2<
 body = re.sub(r'<table([^>]*)>\s*<caption>(.*?)</caption>', r'<p class="tcap">\2</p><table\1>', body, flags=re.S)
 body = re.sub(r"<table", '<div class="tw"><table', body); body = body.replace("</table>", "</table></div>")
 k = iter(range(1, 99)); body = re.sub(r'<p class="tcap">', lambda m: f'<p class="tcap"><b>Table {next(k)}.</b> ', body)
+if len(sys.argv) > 3 and "ko" in sys.argv[3]:  # Korean translation: Korean labels
+    body = re.sub(r"<b>Figure (\d+)\.</b>", r"<b>그림 \1.</b>", body)
+    body = re.sub(r"<b>Table (\d+)\.</b>", r"<b>표 \1.</b>", body)
+    body = body.replace(">Abstract<", ">초록<")
 ntodo = body.count('class="todo"')
-tpl = open("page.tpl").read()
+tpl = open(sys.argv[3] if len(sys.argv) > 3 else "page.tpl").read()
 open(sys.argv[1], "w").write(tpl.replace("{{BODY}}", body).replace("{{NTODO}}", str(ntodo)).replace("{{COMMIT}}", sys.argv[2]))
 print("todos", ntodo, "size", len(tpl) + len(body))

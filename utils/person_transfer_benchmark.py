@@ -45,7 +45,7 @@ import numpy as np
 
 from src.preference.active_query import ActiveQueryStrategy, RandomQueryStrategy
 from src.preference.maxinp import MaxInPStrategy
-from src.preference.bayesian_query import EUBOStrategy
+from src.preference.bayesian_query import EUBOStrategy, InfoGainStrategy
 from utils.fisher_optimal_on_real_candidates import load_scenario_feats
 from utils.unified_query_benchmark import shape_distance
 
@@ -77,6 +77,7 @@ METHODS = {
     "ActiveQuery": lambda rng: ActiveQueryStrategy(rng=rng),
     "MaxInP": lambda rng: MaxInPStrategy(rng=rng),
     "EUBO": lambda rng: EUBOStrategy(rng=rng),
+    "InfoGain": lambda rng: InfoGainStrategy(rng=rng),
     "EUBO-anyscene": lambda rng: EUBOAnySceneStrategy(rng=rng),
 }
 

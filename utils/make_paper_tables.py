@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 """LaTeX tables for paper/ from the result JSONs, so every number in the
 manuscript can be regenerated:
-  tables/regret.tex      simple regret, Random / AQ / EUBO / DPO / DPO+EUBO
-                         questions / references (results/codebook/dpo/)
+  tables/regret.tex      simple regret, Random / AQ / information gain / EUBO /
+                         DPO / DPO+EUBO questions / references
+                         (results/codebook/infogain/; same runs as dpo/ plus InfoGain)
   tables/agreement.tex   held-out pairwise agreement, same runs (appendix)
   tables/generator.tex   Crowd-FM vs VQ-VAE x Random / AQ / EUBO, union
                          regret (results/codebook/generator/)
+  tables/robust.tex      users the estimator does not describe: answer noise,
+                         random answers, nonlinear utility (results/codebook/robust/)
   tables/closed_loop.tex closed-loop replay, final planner (slow/stop
                          candidates + safety-checked goal approach)
                          (results/codebook/closed_loop/*_safe_c0.5.json)
@@ -24,7 +27,7 @@ import numpy as np
 SETTINGS = [("gc_gauss", "GC", "dense"), ("gc_sparse", "GC", "sparse"),
             ("eth_gauss", "ETH/UCY", "dense"), ("eth_sparse", "ETH/UCY", "sparse")]
 METHODS = [("Random", "BT + random queries"), ("ActiveQuery", "BT + active query (AQ)"),
-           ("DPO", "DPO + random queries"), ("DPO-EUBO", "DPO + EUBO queries"), ("EUBO", "BT + EUBO (ours)")]
+           ("InfoGain", "BT + information gain"), ("DPO", "DPO + random queries"), ("DPO-EUBO", "DPO + EUBO queries"), ("EUBO", "BT + EUBO (ours)")]
 COL = {"agreement": 0, "answer_acc": 1, "regret": 2}
 
 
@@ -35,7 +38,7 @@ def boot(x, rng, n=2000):
 
 
 def diff_cell(v):
-    m, lo, hi = v
+    m, lo, hi = (0.0 if abs(x) < 5e-4 else x for x in v)  # no "-0.000"
     dag = "$^\\dagger$" if lo > 0 or hi < 0 else ""
     f = lambda x: f"{x:+.3f}".replace("-", "$-$")
     return f"{f(m)}{dag} \\scriptsize{{[{f(lo)}, {f(hi)}]}}"
@@ -61,7 +64,8 @@ def benchmark_table(res, metric, rng, lower_better):
         lines.append(label + " & " + " & ".join(cells) + " \\\\")
     lines.append("Oracle $\\theta^*$ & " + " & ".join(f"{res[s]['rows']['oracle theta*'][metric][0]:.3f}" for s, _, _ in SETTINGS) + " \\\\")
     lines.append("\\midrule")
-    for other, label in [("Random", "EUBO $-$ Random"), ("ActiveQuery", "EUBO $-$ AQ"), ("DPO", "EUBO $-$ DPO")]:
+    for other, label in [("Random", "EUBO $-$ Random"), ("ActiveQuery", "EUBO $-$ AQ"), ("InfoGain", "EUBO $-$ InfoGain"),
+                         ("DPO", "EUBO $-$ DPO")]:
         cells = []
         for s, _, _ in SETTINGS:
             P = res[s]["per_user"]
@@ -73,7 +77,8 @@ def benchmark_table(res, metric, rng, lower_better):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--dpo-dir", default="results/codebook/dpo")
+    p.add_argument("--dpo-dir", default="results/codebook/infogain")
+    p.add_argument("--robust-dir", default="results/codebook/robust")
     p.add_argument("--gen-dir", default="results/codebook/generator")
     p.add_argument("--cl-dir", default="results/codebook/closed_loop")
     p.add_argument("--out-dir", default="paper/tables")
@@ -96,6 +101,36 @@ def main():
         "\\begin{table}[h]\n\\centering\n\\caption{Held-out pairwise agreement with the user's preference (higher is better) after 5 queries "
         "(20 in parentheses); same runs as Table~\\ref{tab:regret}.}\n\\label{tab:agreement}\n\\setlength{\\tabcolsep}{3pt}\n"
         "\\resizebox{\\linewidth}{!}{%\n" + benchmark_table(res, "agreement", rng, False) + "}\n\\end{table}\n")
+
+    # robustness: users outside the estimator's model (dense users)
+    CONDS = [("b1", "answer noise $\\beta=1$"), ("b2", "answer noise $\\beta=2$"), ("b10", "answer noise $\\beta=10$"),
+             ("lapse20", "20\\% random answers"), ("nl05", "nonlinear utility, $w=0.5$"), ("nl10", "nonlinear utility, $w=1$")]
+    RM = [("Random", "Random"), ("ActiveQuery", "AQ"), ("DPO", "DPO"), ("InfoGain", "InfoGain"), ("EUBO", "EUBO")]
+    lines = []
+    for ds, name in [("gc", "Grand Central"), ("eth", "ETH/UCY")]:
+        lines.append(f"\\multicolumn{{8}}{{l}}{{\\emph{{{name}}}}} \\\\")
+        for c, label in CONDS:
+            r = json.load(open(f"{args.robust_dir}/{ds}_{c}.json"))
+            v = {m: r["curves"][m]["5"]["regret"][0] for m, _ in RM}
+            top = min(v.values())
+            cells = [f"{r['rows']['human prior (argmax log p)']['regret'][0]:.3f}"]
+            for m, _ in RM:
+                cell = f"{v[m]:.3f}"
+                if m == "EUBO" and all(r["paired"][f"EUBO - {o}"]["5"]["regret"][2] < 0 for o in ("Random", "ActiveQuery", "DPO")):
+                    cell += "$^\\dagger$"
+                cells.append("\\textbf{" + cell + "}" if v[m] == top else cell)
+            cells.append(f"{r['rows']['oracle theta*']['regret'][0]:.3f}")
+            lines.append(label + " & " + " & ".join(cells) + " \\\\")
+        lines.append("\\midrule" if ds == "gc" else "")
+    open(f"{args.out_dir}/robust.tex", "w").write(
+        src(f"{args.robust_dir}/{{gc,eth}}_*.json") +
+        "\\begin{table}[h]\n\\centering\n\\caption{Simple regret after 5 queries for users the estimator does not describe (dense "
+        "$\\theta^*$, 200 users each; the main experiments use $\\beta=5$ and linear utilities). $\\beta$: answer noise (lower is noisier); "
+        "random answers: each answer is a coin flip with probability 0.2; nonlinear: pairwise feature interactions with weight $w$ added to "
+        "the true utility, so the oracle $\\theta^*$ no longer reaches 0. $^\\dagger$: EUBO's 95\\% CI over users is below Random, AQ and DPO.}\n"
+        "\\label{tab:robust}\n\\setlength{\\tabcolsep}{3pt}\n\\resizebox{\\linewidth}{!}{%\n"
+        "\\begin{tabular}{lccccccc}\n\\toprule\nUsers & Prior & Random & AQ & DPO & InfoGain & EUBO & Oracle $\\theta^*$ \\\\\n\\midrule\n"
+        + "\n".join(l for l in lines if l) + "\n\\bottomrule\n\\end{tabular}\n}\n\\end{table}\n")
 
     # candidate generators
     G = {u: json.load(open(f"{args.gen_dir}/gc_{u}.json")) for u in ("gauss", "sparse")}

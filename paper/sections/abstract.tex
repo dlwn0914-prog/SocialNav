@@ -1,4 +1,4 @@
-% 11/18 abstract, updated with the DPO and candidate-generator results (11/20). ~220 words.
+% 11/18 abstract, updated with the DPO and candidate-generator results (11/20) and the information-gain / robustness runs (11/23).
 \begin{abstract}
 People differ in how they want a robot to move through a crowd: some prefer it to yield early, others to keep pace;
 some want it to pass behind them, others in front. Existing crowd-navigation policies optimize a fixed notion of social
@@ -9,7 +9,8 @@ Unsafe candidates are filtered out, and each remaining candidate is described by
 passing in front or behind, yielding, detour width, and human-likeness. A Bayesian Bradley--Terry model over these features is
 updated after each answer, and queries are chosen by the expected utility of the best option (EUBO). On held-out situations from
 Grand Central and ETH/UCY with simulated users, five queries reduce the normalized simple regret from 0.45--0.47 (human-data prior)
-to 0.09--0.12, outperforming random queries in all four settings and a DPO-trained estimator on the same budget. On shared
+to 0.09--0.12, outperforming random queries in all four settings and a DPO-trained estimator on the same budget and matching an
+information-gain query; the advantage over random queries persists when simulated users answer noisily or have nonlinear preferences. On shared
 Grand Central scenes, codebook candidates leave 0.11 regret after five queries against 0.35 for candidates from a flow-matching
 crowd-navigation generator, whose narrower candidate set bounds what any preference can achieve. In a closed-loop replay,
 following the learned preference keeps the user's step regret low without raising the collision rate.

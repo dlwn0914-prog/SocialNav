@@ -1,0 +1,55 @@
+% Formal regret definition (11/18 feedback item 4). Setting, safe set and executed path are defined in Sec. 3.
+\subsection{평가: 단순 regret}
+\label{sec:regret}
+
+\paragraph{사용자.}
+평가에서 사용자는 효용 $u^\ast(s,k) = \theta^{\ast\top}\phi(s,k)$를 갖는 단위 벡터 $\theta^\ast$($\lVert\theta^\ast\rVert = 1$)이며,
+질문(query) $(i,j)$에 $P(i \succ j) = \sigma\bigl(\beta\,(u^\ast(s,i) - u^\ast(s,j))\bigr)$, $\beta = 5$의 확률로 답한다.
+$n$개의 응답 후 방법은 $\hat\theta_n$(Bradley--Terry 방법의 경우 라플라스 사후분포 평균, DPO의 경우 DPO 해,
+Sec.~\ref{sec:dpo})을 반환하고, Eq.~\eqref{eq:safe}의 안전한 후보 $\mathcal{C}(s)$ 중에서 Eq.~\eqref{eq:exec}의 $\hat k_n(s)$를 실행한다.
+
+\paragraph{단순 regret.}
+그 선택의 regret은 사용자에게 가장 좋은 안전한 후보 대비 잃은 효용이며,
+상황 간 비교가 가능하도록 해당 상황의 효용 범위로 정규화한다:
+\begin{equation}
+  r_n(s) = \frac{\max_{k \in \mathcal{C}(s)} u^\ast(s,k) \;-\; u^\ast\bigl(s,\hat k_n(s)\bigr)}
+                {\max_{k \in \mathcal{C}(s)} u^\ast(s,k) \;-\; \min_{k \in \mathcal{C}(s)} u^\ast(s,k)}
+  \;\in [0,1].
+  \label{eq:regret}
+\end{equation}
+보고하는 수치는 사용자와 학습에 쓰지 않은(held-out) 테스트 상황에 대한 이 값의 기댓값이다:
+\begin{equation}
+  \mathrm{SR}_n = \mathbb{E}_{\theta^\ast}\Bigl[\frac{1}{|\mathcal{S}_{\text{test}}|}
+  \sum_{s \in \mathcal{S}_{\text{test}}} r_n(s)\Bigr],
+  \label{eq:sr}
+\end{equation}
+여기서 응답은 테스트 상황과 겹치지 않는 질문 상황에서만 수집한다
+($\mathcal{S}_{\text{query}} \cap \mathcal{S}_{\text{test}} = \emptyset$; 크기는 Sec.~\ref{sec:experiments} 참조).
+오라클($\hat\theta = \theta^\ast$)의 경우 $\mathrm{SR}_n = 0$이며,
+안전한 후보를 균등하게 무작위로 고르면 $\mathrm{SR} \approx 0.5$가 된다.
+
+\paragraph{왜 단순 regret인가.}
+질문은 사용자의 주의를 소모하지만 주행 효용은 소모하지 않으며, 중요한 것은 로봇이 그 이후에
+실행하는 경로이다. 따라서 목표는 질문에 걸친 누적 regret이 아니라 최선 팔 식별(best-arm identification; 단순 regret(simple regret))이다.
+EUBO~\citep{astudillo2023qeubo}는 잡음 없는 응답 하에서 바로 이 목표에 대해 한 스텝 베이즈 최적이며,
+이것이 EUBO를 사용하는 이유이다.
+Fig.~\ref{fig:regret}은 질문 수 $n \in \{0,2,5,10,20\}$에 따른 $\mathrm{SR}_n$을 나타낸다.
+
+\paragraph{다른 곳에서 사용하는 변형.}
+\emph{폐루프:} 주행 중 0.8\,s마다 이루어지는 각 재계획 스텝 $t$에서, Eq.~\eqref{eq:regret}을
+그 스텝의 안전 집합 $\mathcal{C}(s_t)$에 대해 평가하고 에피소드의 스텝들에 걸쳐 평균한다(스텝 regret).
+\emph{후보 생성기:} 같은 상황에서 두 생성기 $A$와 $B$를 비교하기 위해, Eq.~\eqref{eq:regret}의 max와 min을
+$\mathcal{C}_A(s) \cup \mathcal{C}_B(s)$에 대해 취한다(합집합 regret). 따라서 후보들이 사용자가 원하는 것을 놓치는 생성기는
+자신의 후보 중 최선을 고르더라도 불이익을 받는다.
+생성기별로 계산한 Eq.~\eqref{eq:regret}의 regret은 생성기 간에 비교할 수 없다.
+\emph{파일럿:} 실제 참가자의 경우 $\theta^\ast$를 알 수 없으므로, 측정 가능한 대리 지표는
+학습에 쓰지 않은(테스트 블록) 응답 중 $\hat\theta$가 예측하는 비율이다.
+
+% Figure (utils/plot_regret_curves.py -> reports/fig_regret.pdf)
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_regret.pdf}
+  \caption{학습에 쓰지 않은 상황에서 A/B 질문 수에 따른 단순 regret $\mathrm{SR}_n$(Eq.~\ref{eq:sr}).
+  음영: 200명의 합성 사용자에 대한 95\% 부트스트랩 CI. 점선: 인간 사전분포(human prior)만 사용; 오라클은 0이다. BT: Bradley--Terry(라플라스); DPO: Sec.~\ref{sec:dpo}.}
+  \label{fig:regret}
+\end{figure}
